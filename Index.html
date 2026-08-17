@@ -37,6 +37,11 @@
   .field{margin-bottom:12px}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .msg{font-size:13px;color:#A3302B;margin:2px 0 10px;min-height:18px}
+  .msg.ok{color:#1F6B4F}
+  .linkbtn{background:none;border:none;color:var(--muted);font-family:var(--body);font-size:13px;
+           text-decoration:underline;cursor:pointer;padding:10px 0 0;display:block;width:100%;text-align:center}
+  .hint{font-size:12px;color:var(--muted);margin:-6px 0 12px;line-height:1.45}
+  .divider{border-top:1px solid var(--line);margin:16px 0 14px}
 
   .btn{font-family:var(--body);font-size:15px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:11px 14px;cursor:pointer;transition:.15s}
   .btn:active{transform:scale(.985)}
@@ -189,13 +194,22 @@
   .loading .box{display:flex;flex-direction:column;align-items:center;gap:14px}
 
   /* แถบโหลดด้านบนจอ */
-  #topbar{position:fixed;top:0;left:0;right:0;height:3px;z-index:200;overflow:hidden;
-          opacity:0;transition:opacity .25s;pointer-events:none}
+  #topbar{position:fixed;top:0;left:0;right:0;height:5px;z-index:200;overflow:hidden;
+          opacity:0;transition:opacity .2s;pointer-events:none;background:rgba(21,32,37,.08)}
   #topbar.on{opacity:1}
-  #topbar i{display:block;height:100%;width:38%;border-radius:0 3px 3px 0;
+  #topbar i{display:block;height:100%;width:38%;border-radius:0 5px 5px 0;
             background:linear-gradient(90deg,rgba(240,180,41,0),var(--amber),#2E7D5B,rgba(46,125,91,0));
             animation:slide 1.15s cubic-bezier(.4,0,.2,1) infinite}
   @keyframes slide{0%{transform:translateX(-105%)}100%{transform:translateX(365%)}}
+
+  /* ป้ายบอกว่ากำลังคุยกับชีต */
+  #syncpill{position:fixed;top:16px;left:50%;z-index:201;display:flex;align-items:center;gap:9px;
+            background:var(--ink);color:#fff;font-size:13.5px;padding:10px 18px;border-radius:999px;
+            box-shadow:0 6px 20px rgba(21,32,37,.3);white-space:nowrap;
+            transform:translateX(-50%) translateY(-24px);opacity:0;pointer-events:none;
+            transition:opacity .2s,transform .2s}
+  #syncpill.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #syncpill .spinner{margin:0}
 
   /* วงกลมหมุนในปุ่ม */
   .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;
@@ -225,6 +239,7 @@
 <body>
 
 <div id="topbar"><i></i></div>
+<div id="syncpill"><span class="spinner"></span><span id="syncTxt">กำลังซิงก์กับชีต…</span></div>
 <div class="loading" id="loading">
   <div class="box"><span class="spinner dark big"></span><span>กำลังโหลดข้อมูลจากชีต…</span></div>
 </div>
@@ -242,10 +257,14 @@
       <input id="aUser" autocomplete="username" autocapitalize="none" placeholder="เช่น beam01"></div>
     <div class="field regOnly hide"><label for="aName">ชื่อที่ให้เพื่อนเห็น</label>
       <input id="aName" placeholder="เช่น บีม" maxlength="20"></div>
-    <div class="field"><label for="aPass">รหัสผ่าน</label>
+    <div class="field"><label for="aPass" id="lbPass">รหัสผ่าน</label>
       <input id="aPass" type="password" autocomplete="current-password" placeholder="อย่างน้อย 4 ตัว"></div>
+    <div class="field recOnly hide"><label for="aRec" id="lbRec">คำลับไว้กู้รหัสผ่าน</label>
+      <input id="aRec" autocapitalize="none" placeholder="เช่น ชื่อหมาตัวแรก" maxlength="40"></div>
+    <div class="hint recOnly hide" id="recHint">จำคำนี้ไว้ให้ดี ถ้าลืมรหัสผ่านจะใช้คำนี้ตั้งรหัสใหม่เอง</div>
     <div class="msg" id="authMsg"></div>
     <button class="btn solid full" id="btnAuth">เข้าสู่ระบบ</button>
+    <button class="linkbtn" id="lnkForgot">ลืมรหัสผ่าน?</button>
   </div>
 </div>
 
@@ -378,9 +397,23 @@
     <div class="field"><label for="accName">ชื่อที่ให้เพื่อนเห็น</label><input id="accName" maxlength="20"></div>
     <div class="msg" id="accMsg"></div>
     <div class="actions">
-      <button class="btn danger" id="btnLogout" style="flex:0 0 auto">ออกจากระบบ</button>
       <button class="btn" id="btnCloseAcc">ปิด</button>
-      <button class="btn solid" id="btnSaveName">บันทึก</button>
+      <button class="btn solid" id="btnSaveName">บันทึกชื่อ</button>
+    </div>
+
+    <div class="divider"></div>
+    <h3 style="font-size:15px">เปลี่ยนรหัสผ่าน / คำลับ</h3>
+    <div class="hint" style="margin:4px 0 12px">กรอกเฉพาะช่องที่อยากเปลี่ยน เว้นว่างช่องที่ไม่เปลี่ยนได้</div>
+    <div class="field"><label for="pwOld">รหัสผ่านปัจจุบัน</label>
+      <input id="pwOld" type="password" autocomplete="current-password"></div>
+    <div class="field"><label for="pwNew">รหัสผ่านใหม่</label>
+      <input id="pwNew" type="password" autocomplete="new-password" placeholder="อย่างน้อย 4 ตัว"></div>
+    <div class="field"><label for="recNew">คำลับใหม่</label>
+      <input id="recNew" autocapitalize="none" placeholder="เว้นว่างถ้าไม่เปลี่ยน" maxlength="40"></div>
+    <div class="msg" id="pwMsg"></div>
+    <div class="actions">
+      <button class="btn danger" id="btnLogout" style="flex:0 0 auto">ออกจากระบบ</button>
+      <button class="btn solid" id="btnSavePw">บันทึกรหัสผ่าน</button>
     </div>
   </div>
 </div>
@@ -429,16 +462,37 @@
   var API="https://script.google.com/macros/s/AKfycbx5YHeu2-O81PrSLK5jMd4d-IWHssLe5h9AT5Tw9dzaHOuutTPFJcBmGEAQGvmEpqTY/exec";
 
   /* ---- แถบโหลดด้านบน ---- */
-  var netN=0;
-  function netStart(){ netN++; $("topbar").classList.add("on"); }
-  function netEnd(){ netN=Math.max(0,netN-1); if(!netN) $("topbar").classList.remove("on"); }
+  var netN=0, netAt=0, netTimer=null;
+  var NET_TEXT={
+    bootstrap:"กำลังโหลดข้อมูลจากชีต…", savePlan:"กำลังบันทึกนัดลงชีต…",
+    deletePlan:"กำลังลบออกจากชีต…",   setRsvp:"กำลังบันทึกคำตอบ…",
+    addComment:"กำลังส่งข้อความ…",     login:"กำลังเข้าสู่ระบบ…",
+    register:"กำลังสมัครสมาชิก…",      resetPassword:"กำลังตั้งรหัสผ่านใหม่…",
+    updateSecurity:"กำลังบันทึกรหัสผ่าน…", changeName:"กำลังบันทึกชื่อ…", logout:"กำลังออกจากระบบ…"
+  };
+  function netShow(on){
+    $("topbar").classList[on?"add":"remove"]("on");
+    $("syncpill").classList[on?"add":"remove"]("on");
+  }
+  function netStart(fn){
+    if(netTimer){ clearTimeout(netTimer); netTimer=null; }
+    netN++;
+    $("syncTxt").textContent=NET_TEXT[fn]||"กำลังซิงก์กับชีต…";
+    if(netN===1){ netAt=Date.now(); netShow(true); }
+  }
+  function netEnd(){
+    netN=Math.max(0,netN-1);
+    if(netN) return;
+    var left=Math.max(0, 600-(Date.now()-netAt));   // โชว์อย่างน้อย 0.6 วิ จะได้ทันเห็น
+    netTimer=setTimeout(function(){ netShow(false); netTimer=null; }, left);
+  }
   function spin(txt,dark){ return '<span class="spinner'+(dark?" dark":"")+'"></span>'+txt; }
 
   /* ---- เรียกฟังก์ชันฝั่ง Apps Script ----
      เปิดจาก Apps Script จะใช้ google.script.run
      เปิดจาก GitHub Pages หรือที่อื่นจะใช้ fetch ไปที่ API ข้างบน  */
   function call(fn){
-    netStart();
+    netStart(fn);
     return call_.apply(null,arguments).then(
       function(v){ netEnd(); return v; },
       function(e){ netEnd(); throw e; });
@@ -801,30 +855,44 @@
   }
   function setAuthMode(m){
     authMode=m;
-    Array.prototype.forEach.call($("authTabs").children,function(b){ b.setAttribute("aria-pressed",b.dataset.m===m?"true":"false"); });
+    Array.prototype.forEach.call($("authTabs").children,function(b){
+      b.setAttribute("aria-pressed",b.dataset.m===m?"true":"false");
+    });
     document.querySelectorAll(".regOnly").forEach(function(el){ el.classList[m==="register"?"remove":"add"]("hide"); });
-    $("btnAuth").textContent=m==="register"?"สมัครสมาชิก":"เข้าสู่ระบบ";
-    $("aPass").setAttribute("autocomplete",m==="register"?"new-password":"current-password");
+    document.querySelectorAll(".recOnly").forEach(function(el){ el.classList[m==="login"?"add":"remove"]("hide"); });
+    $("btnAuth").textContent = m==="register"?"สมัครสมาชิก":(m==="forgot"?"ตั้งรหัสผ่านใหม่":"เข้าสู่ระบบ");
+    $("lbPass").textContent  = m==="forgot"?"รหัสผ่านใหม่":"รหัสผ่าน";
+    $("lbRec").textContent   = m==="forgot"?"คำลับที่ตั้งไว้ตอนสมัคร":"คำลับไว้กู้รหัสผ่าน";
+    $("recHint").textContent = m==="forgot"?"ต้องตอบให้ตรงกับที่ตั้งไว้ตอนสมัคร ตัวพิมพ์เล็กใหญ่ไม่มีผล"
+                                          :"จำคำนี้ไว้ให้ดี ถ้าลืมรหัสผ่านจะใช้คำนี้ตั้งรหัสใหม่เอง";
+    $("lnkForgot").textContent = m==="forgot"?"กลับไปหน้าเข้าสู่ระบบ":"ลืมรหัสผ่าน?";
+    $("aPass").setAttribute("autocomplete",m==="login"?"current-password":"new-password");
     $("authMsg").textContent="";
   }
   function doAuth(){
-    var payload={username:$("aUser").value.trim(),name:$("aName").value.trim(),password:$("aPass").value};
+    var payload={username:$("aUser").value.trim(),name:$("aName").value.trim(),
+                 password:$("aPass").value,recovery:$("aRec").value.trim()};
     if(!payload.username||!payload.password){ $("authMsg").textContent="กรอกชื่อผู้ใช้และรหัสผ่านให้ครบ"; return; }
+    if(authMode!=="login" && !payload.recovery){ $("authMsg").textContent="กรอกคำลับด้วย"; return; }
     $("btnAuth").disabled=true; $("btnAuth").innerHTML=spin("กำลังตรวจสอบ…"); $("authMsg").textContent="";
-    call(authMode==="register"?"register":"login",payload).then(function(r){
+    var fn = authMode==="register" ? "register" : (authMode==="forgot" ? "resetPassword" : "login");
+    call(fn,payload).then(function(r){
       token=r.token; store("tb_token",token); me=r.user;
-      $("authMsg").textContent=""; $("aPass").value="";
+      $("authMsg").textContent=""; $("aPass").value=""; $("aRec").value="";
+      if(authMode==="forgot") toast("ตั้งรหัสผ่านใหม่แล้ว");
       showApp(); return reload(true);
     }).catch(function(e){ $("authMsg").textContent=e.message; })
       .then(function(){
         $("btnAuth").disabled=false;
-        $("btnAuth").textContent=authMode==="register"?"สมัครสมาชิก":"เข้าสู่ระบบ";
+        $("btnAuth").textContent=authMode==="register"?"สมัครสมาชิก":(authMode==="forgot"?"ตั้งรหัสผ่านใหม่":"เข้าสู่ระบบ");
       });
   }
 
   /* ---- เหตุการณ์ ---- */
   $("authTabs").onclick=function(e){ var b=e.target.closest("button"); if(b) setAuthMode(b.dataset.m); };
   $("btnAuth").onclick=doAuth;
+  $("lnkForgot").onclick=function(){ setAuthMode(authMode==="forgot"?"login":"forgot"); };
+  $("aRec").onkeydown=function(e){ if(e.key==="Enter") doAuth(); };
   $("aPass").onkeydown=function(e){ if(e.key==="Enter") doAuth(); };
 
   $("prev").onclick=function(){ view=new Date(view.getFullYear(),view.getMonth()-1,1); selDate=null; renderCalendar(); renderList(); renderOverview(); };
@@ -880,7 +948,25 @@
 
   $("meChip").onclick=function(){
     $("accName").value=me.name; $("accSub").textContent="ชื่อผู้ใช้: "+me.username;
-    $("accMsg").textContent=""; $("accBg").classList.add("open");
+    $("accMsg").textContent=""; $("pwMsg").textContent=""; $("pwMsg").classList.remove("ok");
+    $("pwOld").value=""; $("pwNew").value=""; $("recNew").value="";
+    $("accBg").classList.add("open");
+  };
+  $("btnSavePw").onclick=function(){
+    var b=this, m=$("pwMsg");
+    var payload={oldPassword:$("pwOld").value,newPassword:$("pwNew").value.trim(),newRecovery:$("recNew").value.trim()};
+    m.classList.remove("ok");
+    if(!payload.oldPassword){ m.textContent="กรอกรหัสผ่านปัจจุบันก่อน"; return; }
+    if(!payload.newPassword && !payload.newRecovery){ m.textContent="ยังไม่ได้กรอกสิ่งที่จะเปลี่ยน"; return; }
+    b.disabled=true; b.innerHTML=spin("กำลังบันทึก…"); m.textContent="";
+    call("updateSecurity",token,payload).then(function(r){
+      $("pwOld").value=""; $("pwNew").value=""; $("recNew").value="";
+      m.classList.add("ok");
+      m.textContent=(r.changed.password?"เปลี่ยนรหัสผ่านแล้ว":"")+
+        (r.changed.password&&r.changed.recovery?" และ":"")+(r.changed.recovery?"เปลี่ยนคำลับแล้ว":"");
+      toast("บันทึกแล้ว");
+    }).catch(function(e){ m.textContent=e.message; })
+      .then(function(){ b.disabled=false; b.textContent="บันทึกรหัสผ่าน"; });
   };
   $("btnSaveName").onclick=function(){
     var v=$("accName").value.trim();
