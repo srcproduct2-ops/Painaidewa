@@ -78,6 +78,7 @@
   .cell.today .daynum{background:var(--amber);color:var(--ink);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
   .chip{font-size:11.5px;padding:2px 5px;border-radius:4px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .chip.errand{background:var(--errand)} .chip.trip{background:var(--trip)} .chip.other{background:var(--other)}
+  .chip.busy{background:repeating-linear-gradient(45deg,#8A9599,#8A9599 4px,#9CA6A9 4px,#9CA6A9 8px)}
   .more{font-size:11px;color:var(--muted)}
   .cell-sum{margin-top:auto;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
   .dots{display:none;gap:3px;flex-wrap:wrap}
@@ -96,6 +97,16 @@
   .plan.errand .pdate{border-left-color:var(--errand)}
   .plan.trip .pdate{border-left-color:var(--trip)}
   .plan.other .pdate{border-left-color:var(--other)}
+  .plan.busy .pdate{border-left-color:#8A9599}
+  .plan.busy .ptitle{color:var(--muted)}
+  .chk{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink);background:#FBFCFC;
+       border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;margin:0}
+  .chk input{width:20px;height:20px;flex:none;accent-color:#8A9599;margin:0}
+  .chk small{display:block;color:var(--muted);font-size:12px}
+  .busyhint{background:#F3F0E4;border:1px solid #E4DCC2;color:#6B5A24;border-radius:10px;
+            padding:9px 11px;font-size:12.5px;margin-bottom:12px}
+  .busybadge{font-family:var(--body);font-size:11px;background:#EDEFEF;color:#5C6B70;
+             border-radius:999px;padding:1px 8px;display:inline-block;margin-top:5px}
   .pbody{min-width:0;flex:1}
   .ptitle{font-size:14.5px;font-weight:500}
   .pmeta{font-size:12.5px;color:var(--muted);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -228,6 +239,7 @@
       <option value="trip">ไปเที่ยว</option>
       <option value="errand">ไปธุระ</option>
       <option value="other">อื่น ๆ</option>
+      <option value="busy">เฉพาะวันไม่ว่าง</option>
     </select>
   </div>
 
@@ -275,24 +287,31 @@
     <h3 id="formTitle">ลงนัดใหม่</h3>
     <div class="sub" id="formSub"></div>
     <div class="field">
-      <label>ประเภท</label>
-      <div class="types" id="types">
+      <label class="planOnly">ประเภท</label>
+      <div class="types planOnly" id="types">
         <button type="button" data-t="trip" aria-pressed="true">ไปเที่ยว</button>
         <button type="button" data-t="errand" aria-pressed="false">ไปธุระ</button>
         <button type="button" data-t="other" aria-pressed="false">อื่น ๆ</button>
       </div>
     </div>
-    <div class="field"><label for="fTitle">ไปทำอะไร</label><input id="fTitle" placeholder="เช่น ไปทะเลบางแสน"></div>
-    <div class="field"><label for="fPlace">นัดเจอที่ไหน</label><input id="fPlace" placeholder="เช่น หน้า BTS อ่อนนุช"></div>
+    <div class="field">
+      <label class="chk" for="fBusy">
+        <input type="checkbox" id="fBusy">
+        <span>วันนี้ฉันไม่ว่าง<small>แจ้งเพื่อนว่าอย่านัดวันนี้ ไม่มีปุ่มให้ใครกดร่วม</small></span>
+      </label>
+    </div>
+    <div class="busyhint hide" id="busyHint"></div>
+    <div class="field"><label for="fTitle" id="lbTitle">ไปทำอะไร</label><input id="fTitle" placeholder="เช่น ไปทะเลบางแสน"></div>
+    <div class="field planOnly" id="wrapPlace"><label for="fPlace">นัดเจอที่ไหน</label><input id="fPlace" placeholder="เช่น หน้า BTS อ่อนนุช"></div>
     <div class="field two">
       <div><label for="fDate">วันที่</label><input id="fDate" type="date"></div>
-      <div><label for="fCost">ค่าเดินทาง/คน</label><input id="fCost" type="number" inputmode="decimal" min="0" placeholder="0"></div>
+      <div class="planOnly"><label for="fCost">ค่าเดินทาง/คน</label><input id="fCost" type="number" inputmode="decimal" min="0" placeholder="0"></div>
     </div>
     <div class="field two">
       <div><label for="fStart">เวลาเริ่ม</label><input id="fStart" type="time"></div>
       <div><label for="fEnd">เวลาสิ้นสุด</label><input id="fEnd" type="time"></div>
     </div>
-    <div class="field"><label for="fDist">ระยะทาง (กม.)</label><input id="fDist" type="number" inputmode="decimal" min="0" placeholder="0"></div>
+    <div class="field planOnly"><label for="fDist">ระยะทาง (กม.)</label><input id="fDist" type="number" inputmode="decimal" min="0" placeholder="0"></div>
     <div class="field"><label for="fNote">รายละเอียด</label><textarea id="fNote" placeholder="เช่น เจอกัน 7 โมง ใครมีรถบอกด้วย"></textarea></div>
     <div class="msg" id="formMsg"></div>
     <div class="actions">
@@ -338,8 +357,8 @@
   "use strict";
 
   var TH=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-  var TYPE_LABEL={errand:"ไปธุระ",trip:"ไปเที่ยว",other:"อื่น ๆ"};
-  var TYPE_COLOR={errand:"#2C5F7C",trip:"#2E7D5B",other:"#7A4E8C"};
+  var TYPE_LABEL={errand:"ไปธุระ",trip:"ไปเที่ยว",other:"อื่น ๆ",busy:"วันไม่ว่าง"};
+  var TYPE_COLOR={errand:"#2C5F7C",trip:"#2E7D5B",other:"#7A4E8C",busy:"#8A9599"};
   var RSVP={yes:"ไปแน่",maybe:"ยังไม่แน่",no:"ไม่ไป"};
   var AV=["#2C5F7C","#2E7D5B","#7A4E8C","#B5652F","#3F6E8C","#8A6410","#4B7A5C","#8C4A5E"];
 
@@ -356,6 +375,11 @@
   function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2600); }
   function hash(s){ var h=0; for(var i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return h; }
   function nameOf(id){ return members[id] || "สมาชิก"; }
+  function dt(p){ return p.busy ? "busy" : p.type; }          // ประเภทที่ใช้แสดงผล
+  function busyOn(date,skipId){                                // ใครไม่ว่างวันนั้นบ้าง
+    return plans.filter(function(p){ return p.busy && p.date===date && p.id!==skipId; })
+                .map(function(p){ return p.ownerName||nameOf(p.ownerId); });
+  }
   function avatar(name,size){
     var s=size||24, c=AV[hash(name||"?")%AV.length];
     return '<span class="av" style="background:'+c+';width:'+s+'px;height:'+s+'px;font-size:'+Math.round(s*.44)+'px">'+esc((name||"?").trim().charAt(0))+'</span>';
@@ -369,9 +393,18 @@
   /* ---- ที่อยู่ของ Apps Script (ลงท้ายด้วย /exec) ---- */
   var API="https://script.google.com/macros/s/AKfycbx5YHeu2-O81PrSLK5jMd4d-IWHssLe5h9AT5Tw9dzaHOuutTPFJcBmGEAQGvmEpqTY/exec";
 
-  /* ---- เรียกฟังก์ชันฝั่ง Apps Script ---- */
+  /* ---- เรียกฟังก์ชันฝั่ง Apps Script ----
+     เปิดจาก Apps Script จะใช้ google.script.run
+     เปิดจาก GitHub Pages หรือที่อื่นจะใช้ fetch ไปที่ API ข้างบน  */
   function call(fn){
     var args=Array.prototype.slice.call(arguments,1);
+    if(window.google && google.script && google.script.run){
+      return new Promise(function(res,rej){
+        google.script.run.withSuccessHandler(res).withFailureHandler(function(e){
+          rej(new Error(e && e.message ? e.message : "เกิดข้อผิดพลาด"));
+        })[fn].apply(null,args);
+      });
+    }
     // ใช้ text/plain เพื่อเลี่ยง preflight ที่ Apps Script ไม่รองรับ
     return fetch(API,{
       method:"POST",
@@ -401,6 +434,7 @@
   function renderOdo(){
     var ppl={}, myCost=0;
     plans.forEach(function(p){
+      if(p.busy) return;
       goingList(p,"yes").forEach(function(u){ ppl[u]=1; });
       if(myRsvp(p)==="yes") myCost+=n_(p.cost);
     });
@@ -413,8 +447,9 @@
   /* ---- ตัวกรอง ---- */
   function visible(list){
     if(filter==="all") return list;
-    if(filter==="mine") return list.filter(function(p){ return myRsvp(p)==="yes"; });
-    return list.filter(function(p){ return p.type===filter; });
+    if(filter==="busy") return list.filter(function(p){ return p.busy; });
+    if(filter==="mine") return list.filter(function(p){ return !p.busy && myRsvp(p)==="yes"; });
+    return list.filter(function(p){ return !p.busy && p.type===filter; });
   }
   function ofDate(d){ return visible(plans).filter(function(p){return p.date===d;}).sort(function(a,b){return (a.start||"99").localeCompare(b.start||"99");}); }
   function monthPlans(){
@@ -438,11 +473,13 @@
          '<div class="daynum">'+d.getDate()+'</div>';
       if(list.length){
         h+='<div class="dots">';
-        list.slice(0,6).forEach(function(p){ h+='<i style="background:'+TYPE_COLOR[p.type]+'"></i>'; });
+        list.slice(0,6).forEach(function(p){ h+='<i style="background:'+TYPE_COLOR[dt(p)]+'"></i>'; });
         h+='</div>';
-        list.slice(0,2).forEach(function(p){ h+='<div class="chip '+p.type+'">'+esc(p.title)+'</div>'; });
+        list.slice(0,2).forEach(function(p){
+          h+='<div class="chip '+dt(p)+'">'+(p.busy?"ไม่ว่าง · "+esc(p.ownerName||nameOf(p.ownerId)):esc(p.title))+'</div>';
+        });
         if(list.length>2) h+='<div class="more">+'+(list.length-2)+' นัด</div>';
-        var ppl=0; list.forEach(function(p){ ppl+=goingList(p,"yes").length; });
+        var ppl=0; list.forEach(function(p){ if(!p.busy) ppl+=goingList(p,"yes").length; });
         h+='<div class="cell-sum">'+(ppl?ppl+" คนไป":"")+'</div>';
       }
       h+='</div>';
@@ -455,10 +492,19 @@
     var d=p.date?new Date(p.date+"T00:00"):new Date();
     var time=p.start?p.start+(p.end?"–"+p.end:""):"ยังไม่ระบุเวลา";
     var yes=goingList(p,"yes"), mine=myRsvp(p);
+    var owner=esc(p.ownerName||nameOf(p.ownerId));
+    if(p.busy){
+      return '<div class="plan busy" data-id="'+p.id+'">'+
+        '<div class="pdate"><b>'+d.getDate()+'</b>'+TH[d.getMonth()].slice(0,3)+'</div>'+
+        '<div class="pbody"><div class="ptitle">'+owner+' ไม่ว่าง</div>'+
+        '<div class="pmeta">'+(p.start?time:"ทั้งวัน")+(p.title&&p.title!=="ไม่ว่าง"?" · "+esc(p.title):"")+'</div>'+
+        '<span class="busybadge">อย่านัดวันนี้</span></div>'+
+        '<div class="pright" style="color:var(--muted)">—</div></div>';
+    }
     return '<div class="plan '+p.type+'" data-id="'+p.id+'">'+
       '<div class="pdate"><b>'+d.getDate()+'</b>'+TH[d.getMonth()].slice(0,3)+'</div>'+
       '<div class="pbody"><div class="ptitle">'+esc(p.title)+'</div>'+
-      '<div class="pmeta">'+time+(p.place?" · "+esc(p.place):"")+' · โดย '+esc(p.ownerName||nameOf(p.ownerId))+'</div>'+
+      '<div class="pmeta">'+time+(p.place?" · "+esc(p.place):"")+' · โดย '+owner+'</div>'+
       '<div class="faces"><div class="stack">'+yes.slice(0,5).map(function(u){return avatar(nameOf(u),22);}).join("")+'</div>'+
       '<span class="goingnum">'+(yes.length?yes.length+" คนจะไป":"ยังไม่มีใครกด")+'</span></div>'+
       (mine?'<span class="tagme '+mine+'">'+(mine==="no"?"คุณไม่ไป":"คุณ"+RSVP[mine])+'</span>':"")+
@@ -485,7 +531,10 @@
   /* ---- ภาพรวม ---- */
   function tile(k,v,u){ return '<div class="tile"><div class="k">'+k+'</div><div class="v">'+v+'<small>'+u+'</small></div></div>'; }
   function renderOverview(){
-    var list=scope==="month"?monthPlans():visible(plans);
+    var all=scope==="month"?monthPlans():visible(plans);
+    var list=all.filter(function(p){ return !p.busy; });
+    var busyDays=all.filter(function(p){ return p.busy; });
+    var myBusy=busyDays.filter(function(p){ return p.ownerId===me.id; }).length;
     var groupCost=0,dist=0,ppl={},myCost=0,myCount=0,myDist=0;
     list.forEach(function(p){
       var yes=goingList(p,"yes");
@@ -494,7 +543,7 @@
       if(myRsvp(p)==="yes"){ myCost+=n_(p.cost); myDist+=n_(p.dist); myCount++; }
     });
     $("tiles").innerHTML=tile("จำนวนนัด",list.length,"นัด")+tile("ค่าเดินทางรวมกลุ่ม",money(groupCost),"บาท")+
-      tile("ระยะทางรวม",km(dist),"กม.")+tile("เพื่อนที่ร่วม",Object.keys(ppl).length,"คน");
+      tile("ระยะทางรวม",km(dist),"กม.")+tile("วันที่มีคนไม่ว่าง",busyDays.length,"วัน");
 
     var types=["trip","errand","other"],max=1,agg={};
     types.forEach(function(t){
@@ -518,7 +567,8 @@
       '<li>นัดที่ฉันจะไป<span class="n">'+myCount+' นัด</span></li>'+
       '<li>ค่าเดินทางที่ฉันต้องจ่าย<span class="n">฿'+money(myCost)+'</span></li>'+
       '<li>ระยะทางของฉัน<span class="n">'+km(myDist)+' กม.</span></li>'+
-      '<li>เฉลี่ยต่อนัด<span class="n">฿'+money(myCount?Math.round(myCost/myCount):0)+'</span></li>';
+      '<li>เฉลี่ยต่อนัด<span class="n">฿'+money(myCount?Math.round(myCost/myCount):0)+'</span></li>'+
+      '<li>วันที่ฉันแจ้งไม่ว่าง<span class="n">'+myBusy+' วัน</span></li>';
   }
 
   function renderMe(){ $("meChip").innerHTML=avatar(me.name,24)+esc(me.name); }
@@ -542,36 +592,53 @@
     pendingType=t;
     Array.prototype.forEach.call($("types").children,function(b){ b.setAttribute("aria-pressed",b.dataset.t===t?"true":"false"); });
   }
+  function toggleBusyMode(){
+    var on=$("fBusy").checked;
+    document.querySelectorAll(".planOnly").forEach(function(el){ el.classList[on?"add":"remove"]("hide"); });
+    $("lbTitle").textContent=on?"เหตุผล (ไม่ใส่ก็ได้)":"ไปทำอะไร";
+    $("fTitle").placeholder=on?"เช่น ติดสอบ, ทำงาน":"เช่น ไปทะเลบางแสน";
+    $("formTitle").textContent=on?"แจ้งวันไม่ว่าง":(editingId?"แก้ไขนัด":"ลงนัดใหม่");
+  }
+  function showBusyHint(){
+    var names=busyOn($("fDate").value,editingId);
+    var el=$("busyHint");
+    if(names.length && !$("fBusy").checked){
+      el.textContent="วันนี้มีคนแจ้งว่าไม่ว่าง: "+names.join(", ");
+      el.classList.remove("hide");
+    }else el.classList.add("hide");
+  }
   function openForm(date,id){
     editingId=id||null;
     var p=id?plans.filter(function(x){return x.id===id;})[0]:null;
+    $("fBusy").checked=!!(p&&p.busy);
     $("formTitle").textContent=p?"แก้ไขนัด":"ลงนัดใหม่";
     var d=new Date(((p&&p.date)||date)+"T00:00");
     $("formSub").textContent=d.getDate()+" "+TH[d.getMonth()]+" "+(d.getFullYear()+543);
     setType(p?p.type:"trip");
-    $("fTitle").value=p?p.title:""; $("fPlace").value=p?p.place:"";
+    $("fTitle").value=(p&&!(p.busy&&p.title==="ไม่ว่าง"))?p.title:""; $("fPlace").value=p?p.place:"";
     $("fDate").value=p?p.date:date;
     $("fCost").value=p&&n_(p.cost)?p.cost:""; $("fDist").value=p&&n_(p.dist)?p.dist:"";
     $("fStart").value=p?p.start:""; $("fEnd").value=p?p.end:"";
     $("fNote").value=p?p.note:"";
     $("btnDelete").classList[p?"remove":"add"]("hide");
     $("formMsg").textContent="";
+    toggleBusyMode(); showBusyHint();
     $("formBg").classList.add("open");
   }
   function savePlan(){
     var payload={
-      id:editingId, type:pendingType,
+      id:editingId, type:pendingType, busy:$("fBusy").checked,
       title:$("fTitle").value.trim(), place:$("fPlace").value.trim(),
       date:$("fDate").value||iso(new Date()),
       cost:$("fCost").value, dist:$("fDist").value,
       start:$("fStart").value, end:$("fEnd").value, note:$("fNote").value.trim()
     };
-    if(!payload.title){ $("formMsg").textContent="กรุณาใส่หัวข้อนัด"; return; }
+    if(!payload.title && !payload.busy){ $("formMsg").textContent="กรุณาใส่หัวข้อนัด"; return; }
     $("btnSavePlan").disabled=true; $("formMsg").textContent="กำลังบันทึกลงชีต…";
     call("savePlan",token,payload).then(function(){
       $("formBg").classList.remove("open");
       view=new Date(payload.date+"T00:00"); selDate=payload.date;
-      toast(editingId?"แก้ไขแล้ว":"ลงนัดแล้ว");
+      toast(editingId?"แก้ไขแล้ว":(payload.busy?"แจ้งวันไม่ว่างแล้ว":"ลงนัดแล้ว"));
       return reload(true);
     }).catch(function(e){ $("formMsg").textContent=e.message; })
       .then(function(){ $("btnSavePlan").disabled=false; });
@@ -591,6 +658,16 @@
     if(!p){ $("detBg").classList.remove("open"); return; }
     var d=p.date?new Date(p.date+"T00:00"):new Date();
     var yes=goingList(p,"yes"),maybe=goingList(p,"maybe"),no=goingList(p,"no"),mine=myRsvp(p);
+    if(p.busy){
+      $("detBody").innerHTML='<h3>'+esc(p.ownerName||nameOf(p.ownerId))+' ไม่ว่าง</h3>'+
+        '<div class="sub">'+d.getDate()+' '+TH[d.getMonth()]+' '+(d.getFullYear()+543)+'</div>'+
+        '<div class="busyhint">วันนี้เจ้าตัวแจ้งว่าไม่ว่าง ถ้าจะนัดควรเลี่ยงวันนี้</div>'+
+        '<div class="detrow"><span class="k">ช่วงเวลา</span>'+(p.start?p.start+(p.end?" – "+p.end:""):"ทั้งวัน")+'</div>'+
+        (p.title&&p.title!=="ไม่ว่าง"?'<div class="detrow"><span class="k">เหตุผล</span>'+esc(p.title)+'</div>':"")+
+        (p.note?'<div class="detrow" style="display:block"><span class="k">รายละเอียด</span><div style="margin-top:4px">'+esc(p.note)+'</div></div>':"");
+      $("btnEdit").classList[p.ownerId===me.id?"remove":"add"]("hide");
+      return;
+    }
     var h='<h3>'+esc(p.title)+'</h3><div class="sub">'+TYPE_LABEL[p.type]+' · '+d.getDate()+' '+TH[d.getMonth()]+' '+(d.getFullYear()+543)+' · ลงโดย '+esc(p.ownerName||nameOf(p.ownerId))+'</div>'+
       '<div class="rsvp" id="rsvp">'+["yes","maybe","no"].map(function(k){
         return '<button data-r="'+k+'" aria-pressed="'+(mine===k)+'">'+RSVP[k]+'</button>';
@@ -690,6 +767,8 @@
     var r=e.target.closest(".plan"); if(r) openDetail(r.dataset.id);
   };
   $("types").onclick=function(e){ var b=e.target.closest("button"); if(b) setType(b.dataset.t); };
+  $("fBusy").onchange=function(){ toggleBusyMode(); showBusyHint(); };
+  $("fDate").onchange=showBusyHint;
   $("btnSavePlan").onclick=savePlan;
   $("btnDelete").onclick=delPlan;
   $("btnCancelForm").onclick=function(){ $("formBg").classList.remove("open"); };
