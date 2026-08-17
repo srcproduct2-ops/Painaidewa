@@ -119,6 +119,14 @@
   .tagme{font-family:var(--body);font-size:11px;background:#E4F0EA;color:#1F6B4F;border-radius:999px;padding:1px 8px;display:inline-block;margin-top:5px}
   .tagme.maybe{background:#FBF0D8;color:#8A6410}
   .tagme.no{background:#EDEFEF;color:#5C6B70}
+  .joinbtn{margin-top:9px;display:inline-flex;align-items:center;gap:6px;background:#1F6B4F;color:#fff;
+           border:none;border-radius:999px;padding:8px 15px;font-family:var(--body);font-size:13.5px;
+           font-weight:500;cursor:pointer;box-shadow:0 2px 6px rgba(31,107,79,.25)}
+  .joinbtn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);box-shadow:none;
+                 padding:6px 13px;font-size:12.5px;margin-left:6px}
+  .chev{align-self:center;color:#B4BEC0;font-family:var(--mono);font-size:22px;line-height:1;padding-left:2px}
+  .plan{transition:background .12s;border-radius:10px;padding-left:2px}
+  .plan:hover{background:#F6F9F8}
 
   .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px}
   .tile{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:11px 12px}
@@ -163,6 +171,8 @@
   .rsvp button[aria-pressed="true"][data-r="yes"]{background:#1F6B4F;color:#fff;border-color:transparent}
   .rsvp button[aria-pressed="true"][data-r="maybe"]{background:var(--amber);color:var(--ink);border-color:transparent}
   .rsvp button[aria-pressed="true"][data-r="no"]{background:#8A9599;color:#fff;border-color:transparent}
+  .rsvpsave{width:100%;padding:13px;margin-bottom:6px}
+  .rsvpnote{font-size:12px;color:var(--muted);text-align:center;margin:-2px 0 12px}
   .detrow{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:8px 0;border-bottom:1px dashed var(--line)}
   .detrow span.k{color:var(--muted)}
   .person{display:flex;align-items:center;gap:7px;font-size:13.5px;padding:5px 0}
@@ -364,7 +374,7 @@
 
   var token="", me=null, members={}, plans=[];
   var view=new Date(), scope="month", filter="all", selDate=null;
-  var editingId=null, detId=null, pendingType="trip", authMode="login";
+  var editingId=null, detId=null, pendingType="trip", authMode="login", pendingRsvp=null;
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
@@ -499,7 +509,7 @@
         '<div class="pbody"><div class="ptitle">'+owner+' ไม่ว่าง</div>'+
         '<div class="pmeta">'+(p.start?time:"ทั้งวัน")+(p.title&&p.title!=="ไม่ว่าง"?" · "+esc(p.title):"")+'</div>'+
         '<span class="busybadge">อย่านัดวันนี้</span></div>'+
-        '<div class="pright" style="color:var(--muted)">—</div></div>';
+        '<div class="pright" style="color:var(--muted)">—</div><div class="chev">›</div></div>';
     }
     return '<div class="plan '+p.type+'" data-id="'+p.id+'">'+
       '<div class="pdate"><b>'+d.getDate()+'</b>'+TH[d.getMonth()].slice(0,3)+'</div>'+
@@ -507,9 +517,13 @@
       '<div class="pmeta">'+time+(p.place?" · "+esc(p.place):"")+' · โดย '+owner+'</div>'+
       '<div class="faces"><div class="stack">'+yes.slice(0,5).map(function(u){return avatar(nameOf(u),22);}).join("")+'</div>'+
       '<span class="goingnum">'+(yes.length?yes.length+" คนจะไป":"ยังไม่มีใครกด")+'</span></div>'+
-      (mine?'<span class="tagme '+mine+'">'+(mine==="no"?"คุณไม่ไป":"คุณ"+RSVP[mine])+'</span>':"")+
+      (mine
+        ? '<span class="tagme '+mine+'">'+(mine==="no"?"คุณไม่ไป":"คุณ"+RSVP[mine])+'</span>'+
+          '<button class="joinbtn ghost" type="button">เปลี่ยนคำตอบ</button>'
+        : '<button class="joinbtn" type="button">กดเข้าร่วมนัดนี้</button>')+
       '</div>'+
-      '<div class="pright"><b>฿'+money(n_(p.cost))+'</b>'+(n_(p.dist)?km(n_(p.dist))+" กม.":"")+'</div></div>';
+      '<div class="pright"><b>฿'+money(n_(p.cost))+'</b>'+(n_(p.dist)?km(n_(p.dist))+" กม.":"")+'</div>'+
+      '<div class="chev">›</div></div>';
   }
   function renderList(){
     var list,title;
@@ -652,7 +666,7 @@
   }
 
   /* ---- รายละเอียดนัด ---- */
-  function openDetail(id){ detId=id; renderDetail(); $("detBg").classList.add("open"); }
+  function openDetail(id){ detId=id; pendingRsvp=null; renderDetail(); $("detBg").classList.add("open"); }
   function renderDetail(){
     var p=plans.filter(function(x){return x.id===detId;})[0];
     if(!p){ $("detBg").classList.remove("open"); return; }
@@ -668,10 +682,14 @@
       $("btnEdit").classList[p.ownerId===me.id?"remove":"add"]("hide");
       return;
     }
+    var saved=mine||"", cur=(pendingRsvp!==null?pendingRsvp:saved), dirty=(cur!==saved);
     var h='<h3>'+esc(p.title)+'</h3><div class="sub">'+TYPE_LABEL[p.type]+' · '+d.getDate()+' '+TH[d.getMonth()]+' '+(d.getFullYear()+543)+' · ลงโดย '+esc(p.ownerName||nameOf(p.ownerId))+'</div>'+
       '<div class="rsvp" id="rsvp">'+["yes","maybe","no"].map(function(k){
-        return '<button data-r="'+k+'" aria-pressed="'+(mine===k)+'">'+RSVP[k]+'</button>';
+        return '<button data-r="'+k+'" aria-pressed="'+(cur===k)+'">'+RSVP[k]+'</button>';
       }).join("")+'</div>'+
+      '<button class="btn solid rsvpsave" id="btnSaveRsvp"'+(dirty?'':' disabled')+'>'+
+        (dirty?(cur?"บันทึกคำตอบ":"ยกเลิกคำตอบของฉัน"):"บันทึกคำตอบ")+'</button>'+
+      '<div class="rsvpnote">'+(dirty?"เลือกแล้วอย่าลืมกดบันทึก":(cur?"คำตอบปัจจุบัน: "+RSVP[cur]:"ยังไม่ได้ตอบ"))+'</div>'+
       '<div class="detrow"><span class="k">เวลา</span>'+(p.start?p.start+(p.end?" – "+p.end:""):"ยังไม่ระบุ")+'</div>'+
       (p.place?'<div class="detrow"><span class="k">นัดเจอที่</span>'+esc(p.place)+'</div>':"")+
       '<div class="detrow"><span class="k">ค่าเดินทาง/คน</span>฿'+money(n_(p.cost))+'</div>'+
@@ -693,12 +711,32 @@
     $("detBody").innerHTML=h;
     $("btnEdit").classList[p.ownerId===me.id?"remove":"add"]("hide");
   }
-  function setRsvp(kind){
-    var id=detId;
-    call("setRsvp",token,id,kind).then(function(r){
+  function pickRsvp(kind,btn){
+    var p=plans.filter(function(x){return x.id===detId;})[0]; if(!p) return;
+    var saved=myRsvp(p)||"";
+    var cur=(pendingRsvp!==null?pendingRsvp:saved);
+    pendingRsvp=(cur===kind)?"":kind;              // กดซ้ำ = ยกเลิกคำตอบ
+    Array.prototype.forEach.call(btn.parentNode.children,function(b){
+      b.setAttribute("aria-pressed", b.dataset.r===pendingRsvp?"true":"false");
+    });
+    var dirty=(pendingRsvp!==saved), sb=$("btnSaveRsvp");
+    sb.disabled=!dirty;
+    sb.textContent=(dirty&&!pendingRsvp)?"ยกเลิกคำตอบของฉัน":"บันทึกคำตอบ";
+    var note=document.querySelector(".rsvpnote");
+    if(note) note.textContent=dirty?"เลือกแล้วอย่าลืมกดบันทึก":(saved?"คำตอบปัจจุบัน: "+RSVP[saved]:"ยังไม่ได้ตอบ");
+  }
+  function saveRsvp(){
+    var id=detId, val=pendingRsvp, sb=$("btnSaveRsvp");
+    if(val===null) return;
+    sb.disabled=true; sb.textContent="กำลังบันทึก…";
+    call("setRsvp",token,id,val||"none").then(function(r){
       plans.forEach(function(p){ if(p.id===id) p.going=r.going; });
-      renderDetail(); renderAll();
-    }).catch(function(e){ toast(e.message); });
+      pendingRsvp=null;
+      renderDetail(); renderOdo(); renderCalendar(); renderList(); renderOverview();
+      toast("บันทึกคำตอบแล้ว");
+    }).catch(function(e){
+      toast(e.message); sb.disabled=false; sb.textContent="บันทึกคำตอบ";
+    });
   }
   function sendComment(){
     var el=$("cInput"); if(!el||!el.value.trim()) return;
@@ -775,12 +813,16 @@
   $("formBg").onclick=function(e){ if(e.target===this) this.classList.remove("open"); };
 
   $("detBody").onclick=function(e){
-    var r=e.target.closest("#rsvp button"); if(r){ setRsvp(r.dataset.r); return; }
+    var r=e.target.closest("#rsvp button"); if(r){ pickRsvp(r.dataset.r,r); return; }
+    if(e.target.id==="btnSaveRsvp"){ saveRsvp(); return; }
     if(e.target.id==="cSend") sendComment();
   };
   $("detBody").onkeydown=function(e){ if(e.target.id==="cInput"&&e.key==="Enter") sendComment(); };
   $("btnEdit").onclick=function(){ $("detBg").classList.remove("open"); openForm(null,detId); };
-  $("btnCloseDet").onclick=function(){ $("detBg").classList.remove("open"); };
+  $("btnCloseDet").onclick=function(){
+    if(pendingRsvp!==null && !confirm("ยังไม่ได้กดบันทึกคำตอบ ปิดเลยไหม")) return;
+    pendingRsvp=null; $("detBg").classList.remove("open");
+  };
   $("detBg").onclick=function(e){ if(e.target===this) this.classList.remove("open"); };
 
   $("meChip").onclick=function(){
