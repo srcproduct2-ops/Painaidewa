@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E9EDEC; --card:#FFFFFF; --ink:#152025; --muted:#5C6B70; --line:#CDD6D5;
+    --amber:#F0B429; --errand:#2C5F7C; --trip:#2E7D5B; --other:#7A4E8C; --radius:12px;
+    --display:"Chakra Petch","IBM Plex Sans Thai","Noto Sans Thai","Sarabun",sans-serif;
+    --body:"IBM Plex Sans Thai","Noto Sans Thai","Sarabun",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:16px 14px calc(96px + env(safe-area-inset-bottom))}
+  .hide{display:none !important}
+
+  /* ===== หน้าเข้าสู่ระบบ ===== */
+  #authView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px 16px}
+  .auth{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;width:100%;max-width:380px}
+  .auth h1{font-family:var(--display);font-size:24px;margin:0 0 2px}
+  .auth p.lead{color:var(--muted);font-size:13px;margin:0 0 18px}
+  .tabs{display:flex;background:#F1F4F3;border-radius:10px;padding:3px;margin-bottom:16px}
+  .tabs button{flex:1;border:none;background:none;font-family:var(--body);font-size:14px;padding:9px;border-radius:8px;cursor:pointer;color:var(--muted)}
+  .tabs button[aria-pressed="true"]{background:var(--ink);color:#fff}
+
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  input,textarea,select{width:100%;font-family:var(--body);font-size:16px;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#FBFCFC}
+  textarea{resize:vertical;min-height:56px}
+  input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  .field{margin-bottom:12px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .msg{font-size:13px;color:#A3302B;margin:2px 0 10px;min-height:18px}
+
+  .btn{font-family:var(--body);font-size:15px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:11px 14px;cursor:pointer;transition:.15s}
+  .btn:active{transform:scale(.985)}
+  .btn.solid{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.full{width:100%}
+  .btn.sm{font-size:13px;padding:7px 11px}
+  .btn.icon{font-family:var(--mono);padding:8px 13px}
+  .btn.danger{color:#A3302B;border-color:#E2C3C1}
+  .btn[disabled]{opacity:.55;pointer-events:none}
+  .spacer{flex:1}
+
+  /* ===== หัวเรื่อง ===== */
+  .masthead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .brand h1{font-family:var(--display);font-weight:700;font-size:22px;margin:0;line-height:1.2}
+  .brand p{margin:1px 0 0;color:var(--muted);font-size:12.5px}
+  .me{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 6px;cursor:pointer;font-size:13.5px}
+  .av{border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:600;flex:none;width:24px;height:24px;font-size:11px}
+
+  .odo{background:var(--ink);border-radius:var(--radius);padding:13px 15px;display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px}
+  .odo-unit{display:flex;flex-direction:column;gap:6px}
+  .odo-label{font-family:var(--display);font-size:10.5px;letter-spacing:.14em;color:#8FA3A8}
+  .reel{display:flex;gap:3px;align-items:baseline}
+  .reel span{font-family:var(--mono);font-weight:600;font-size:20px;line-height:1;background:#0B1216;color:var(--amber);padding:6px 5px;border-radius:3px;min-width:17px;text-align:center;box-shadow:inset 0 -6px 8px -6px #000, inset 0 6px 8px -6px #3A4A50}
+  .reel span.sep{background:none;box-shadow:none;padding:6px 0;min-width:5px;color:#8FA3A8}
+  .reel .suffix{font-family:var(--display);font-size:11px;color:#8FA3A8;background:none;box-shadow:none;padding:0 0 0 4px;min-width:auto}
+
+  .monthbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .monthbar h2{font-family:var(--display);font-weight:600;font-size:18px;margin:0;min-width:150px}
+
+  .cal{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .dow{display:grid;grid-template-columns:repeat(7,1fr);background:#DFE5E4}
+  .dow div{font-family:var(--display);font-size:11px;color:var(--muted);text-align:center;padding:7px 0}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr)}
+  .cell{border-top:1px solid var(--line);border-right:1px solid var(--line);min-height:96px;padding:5px;cursor:pointer;background:var(--card);display:flex;flex-direction:column;gap:3px}
+  .cell:nth-child(7n){border-right:none}
+  .cell.dim{background:#F1F4F3;color:#9BA9AD;cursor:default}
+  .cell.sel{background:#FDF3DC;box-shadow:inset 0 0 0 2px var(--amber)}
+  .daynum{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--muted)}
+  .cell.today .daynum{background:var(--amber);color:var(--ink);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+  .chip{font-size:11.5px;padding:2px 5px;border-radius:4px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip.errand{background:var(--errand)} .chip.trip{background:var(--trip)} .chip.other{background:var(--other)}
+  .more{font-size:11px;color:var(--muted)}
+  .cell-sum{margin-top:auto;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .dots{display:none;gap:3px;flex-wrap:wrap}
+  .dots i{width:6px;height:6px;border-radius:50%;display:block}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:13px}
+  .panel h3{font-family:var(--display);font-size:11.5px;letter-spacing:.12em;color:var(--muted);margin:0 0 9px;font-weight:600}
+  section{margin-top:18px}
+  .sec-head{display:flex;align-items:center;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+  .sec-head h2{font-family:var(--display);font-size:18px;margin:0}
+
+  .plan{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .plan:last-child{border-bottom:none}
+  .pdate{font-family:var(--mono);font-size:11px;text-align:center;line-height:1.15;color:var(--muted);border-left:3px solid var(--line);padding-left:8px;min-width:50px}
+  .pdate b{display:block;font-size:16px;color:var(--ink)}
+  .plan.errand .pdate{border-left-color:var(--errand)}
+  .plan.trip .pdate{border-left-color:var(--trip)}
+  .plan.other .pdate{border-left-color:var(--other)}
+  .pbody{min-width:0;flex:1}
+  .ptitle{font-size:14.5px;font-weight:500}
+  .pmeta{font-size:12.5px;color:var(--muted);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .faces{display:flex;margin-top:6px;align-items:center;gap:6px}
+  .stack{display:flex}
+  .stack .av{margin-right:-6px;border:2px solid var(--card);width:22px;height:22px}
+  .goingnum{font-size:12px;color:var(--muted);margin-left:8px}
+  .pright{text-align:right;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  .pright b{display:block;font-size:14px}
+  .tagme{font-family:var(--body);font-size:11px;background:#E4F0EA;color:#1F6B4F;border-radius:999px;padding:1px 8px;display:inline-block;margin-top:5px}
+  .tagme.maybe{background:#FBF0D8;color:#8A6410}
+  .tagme.no{background:#EDEFEF;color:#5C6B70}
+
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:11px 12px}
+  .tile .k{font-size:12px;color:var(--muted)}
+  .tile .v{font-family:var(--mono);font-weight:600;font-size:20px;margin-top:2px}
+  .tile .v small{font-family:var(--display);font-size:11px;color:var(--muted);margin-left:3px}
+  .panels{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .brow{margin-bottom:11px}
+  .brow-top{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:5px;gap:8px}
+  .brow-top span{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .bar{height:7px;background:#E3E9E8;border-radius:4px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:4px}
+  .plist{list-style:none;margin:0;padding:0}
+  .plist li{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .plist li:last-child{border-bottom:none}
+  .plist span.n{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--card)}
+  .seg button{border:none;background:none;font-family:var(--body);font-size:13px;padding:8px 14px;cursor:pointer;color:var(--muted)}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .empty{color:var(--muted);font-size:13.5px;padding:16px 0;text-align:center}
+
+  /* ===== ปุ่มลอย + แผ่นเลื่อน ===== */
+  .fab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:40;
+       background:var(--ink);color:#fff;border:none;border-radius:999px;padding:15px 22px;
+       font-family:var(--display);font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(21,32,37,.28);cursor:pointer}
+  .sheet-bg{position:fixed;inset:0;background:rgba(21,32,37,.5);display:none;align-items:flex-end;justify-content:center;z-index:60}
+  .sheet-bg.open{display:flex}
+  .sheet{background:var(--card);border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;padding:18px 16px calc(20px + env(safe-area-inset-bottom))}
+  .grip{width:38px;height:4px;background:var(--line);border-radius:99px;margin:0 auto 12px}
+  .sheet h3{font-family:var(--display);font-size:18px;margin:0 0 2px}
+  .sheet .sub{color:var(--muted);font-size:12.5px;margin-bottom:14px;font-family:var(--mono)}
+  .types{display:flex;gap:7px}
+  .types button{flex:1;border:1px solid var(--line);background:#FBFCFC;border-radius:10px;padding:10px 4px;font-family:var(--body);font-size:13.5px;cursor:pointer;color:var(--muted)}
+  .types button[aria-pressed="true"]{color:#fff;border-color:transparent}
+  .types button[data-t="errand"][aria-pressed="true"]{background:var(--errand)}
+  .types button[data-t="trip"][aria-pressed="true"]{background:var(--trip)}
+  .types button[data-t="other"][aria-pressed="true"]{background:var(--other)}
+  .actions{display:flex;gap:8px;margin-top:16px}
+  .actions .btn{flex:1;padding:13px}
+  .rsvp{display:flex;gap:7px;margin:14px 0}
+  .rsvp button{flex:1;border:1px solid var(--line);background:#FBFCFC;border-radius:10px;padding:13px 4px;font-family:var(--body);font-size:14px;cursor:pointer;color:var(--muted)}
+  .rsvp button[aria-pressed="true"][data-r="yes"]{background:#1F6B4F;color:#fff;border-color:transparent}
+  .rsvp button[aria-pressed="true"][data-r="maybe"]{background:var(--amber);color:var(--ink);border-color:transparent}
+  .rsvp button[aria-pressed="true"][data-r="no"]{background:#8A9599;color:#fff;border-color:transparent}
+  .detrow{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .detrow span.k{color:var(--muted)}
+  .person{display:flex;align-items:center;gap:7px;font-size:13.5px;padding:5px 0}
+  .cmt{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+  .cmt .item{display:flex;gap:8px;padding:5px 0;font-size:13.5px}
+  .cmt .txt{background:#F2F6F5;border-radius:12px;padding:7px 11px;flex:1;min-width:0;word-break:break-word}
+  .cmt .txt b{display:block;font-size:11.5px;color:var(--muted);font-weight:500}
+  .cmtbox{display:flex;gap:7px;margin-top:9px}
+  .cmtbox input{flex:1}
+
+  .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(16px);background:var(--ink);color:#fff;font-size:13.5px;padding:11px 17px;border-radius:10px;opacity:0;pointer-events:none;transition:.25s;z-index:90;max-width:92vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .loading{position:fixed;inset:0;background:var(--paper);display:grid;place-items:center;z-index:100;font-family:var(--display);color:var(--muted)}
+  footer{margin-top:22px;color:var(--muted);font-size:12px;text-align:center}
+
+  @media (max-width:760px){ .tiles{grid-template-columns:1fr 1fr} .panels{grid-template-columns:1fr} }
+  @media (max-width:560px){
+    .cell{min-height:58px;padding:4px}
+    .chip,.more,.cell-sum{display:none}
+    .dots{display:flex}
+    .brand h1{font-size:19px}
+    .odo{gap:14px}
+    .reel span{font-size:17px;min-width:15px;padding:5px 4px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">กำลังโหลด…</div>
+
+<!-- ===== เข้าสู่ระบบ / สมัครสมาชิก ===== -->
+<div id="authView" class="hide">
+  <div class="auth">
+    <h1>กระดานนัดเที่ยว</h1>
+    <p class="lead">เข้าสู่ระบบเพื่อลงนัดและกดว่าจะไปกับเพื่อน</p>
+    <div class="tabs" id="authTabs">
+      <button data-m="login" aria-pressed="true">เข้าสู่ระบบ</button>
+      <button data-m="register" aria-pressed="false">สมัครสมาชิก</button>
+    </div>
+    <div class="field"><label for="aUser">ชื่อผู้ใช้</label>
+      <input id="aUser" autocomplete="username" autocapitalize="none" placeholder="เช่น beam01"></div>
+    <div class="field regOnly hide"><label for="aName">ชื่อที่ให้เพื่อนเห็น</label>
+      <input id="aName" placeholder="เช่น บีม" maxlength="20"></div>
+    <div class="field"><label for="aPass">รหัสผ่าน</label>
+      <input id="aPass" type="password" autocomplete="current-password" placeholder="อย่างน้อย 4 ตัว"></div>
+    <div class="msg" id="authMsg"></div>
+    <button class="btn solid full" id="btnAuth">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- ===== หน้าหลัก ===== -->
+<div id="appView" class="hide">
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand">
+      <h1>กระดานนัดเที่ยว</h1>
+      <p>ข้อมูลบันทึกลง Google Sheets อัตโนมัติ</p>
+    </div>
+    <div class="me" id="meChip" role="button" tabindex="0"></div>
+  </header>
+
+  <div class="odo" id="odo"></div>
+
+  <div class="monthbar">
+    <button class="btn icon" id="prev" aria-label="เดือนก่อน">‹</button>
+    <h2 id="monthLabel"></h2>
+    <button class="btn icon" id="next" aria-label="เดือนถัดไป">›</button>
+    <div class="spacer"></div>
+    <button class="btn sm" id="btnRefresh">รีเฟรช</button>
+    <select id="filter" style="width:auto;font-size:13.5px;padding:8px 10px">
+      <option value="all">ทุกนัด</option>
+      <option value="mine">เฉพาะที่ฉันจะไป</option>
+      <option value="trip">ไปเที่ยว</option>
+      <option value="errand">ไปธุระ</option>
+      <option value="other">อื่น ๆ</option>
+    </select>
+  </div>
+
+  <div class="cal">
+    <div class="dow"><div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <section>
+    <div class="sec-head">
+      <h2 id="listTitle">นัดในเดือนนี้</h2>
+      <div class="spacer"></div>
+      <button class="btn sm hide" id="btnClearDay">ดูทั้งเดือน</button>
+    </div>
+    <div class="panel" id="listPanel"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>ภาพรวม</h2>
+      <div class="seg" id="scope">
+        <button data-s="month" aria-pressed="true">เดือนนี้</button>
+        <button data-s="all" aria-pressed="false">ทั้งหมด</button>
+      </div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="panels">
+      <div class="panel"><h3>แยกตามประเภท</h3><div id="byType"></div></div>
+      <div class="panel">
+        <h3>ใครไปบ่อยที่สุด</h3><ul class="plist" id="ranking"></ul>
+        <h3 style="margin-top:15px">ตัวเลขของฉัน</h3><ul class="plist" id="mine"></ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>บันทึกนัดที่ชีต Record1 · สมาชิกที่ชีต User01</footer>
+</div>
+<button class="fab" id="fab">+ ลงนัด</button>
+</div>
+
+<!-- แผ่นฟอร์มนัด -->
+<div class="sheet-bg" id="formBg">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="grip"></div>
+    <h3 id="formTitle">ลงนัดใหม่</h3>
+    <div class="sub" id="formSub"></div>
+    <div class="field">
+      <label>ประเภท</label>
+      <div class="types" id="types">
+        <button type="button" data-t="trip" aria-pressed="true">ไปเที่ยว</button>
+        <button type="button" data-t="errand" aria-pressed="false">ไปธุระ</button>
+        <button type="button" data-t="other" aria-pressed="false">อื่น ๆ</button>
+      </div>
+    </div>
+    <div class="field"><label for="fTitle">ไปทำอะไร</label><input id="fTitle" placeholder="เช่น ไปทะเลบางแสน"></div>
+    <div class="field"><label for="fPlace">นัดเจอที่ไหน</label><input id="fPlace" placeholder="เช่น หน้า BTS อ่อนนุช"></div>
+    <div class="field two">
+      <div><label for="fDate">วันที่</label><input id="fDate" type="date"></div>
+      <div><label for="fCost">ค่าเดินทาง/คน</label><input id="fCost" type="number" inputmode="decimal" min="0" placeholder="0"></div>
+    </div>
+    <div class="field two">
+      <div><label for="fStart">เวลาเริ่ม</label><input id="fStart" type="time"></div>
+      <div><label for="fEnd">เวลาสิ้นสุด</label><input id="fEnd" type="time"></div>
+    </div>
+    <div class="field"><label for="fDist">ระยะทาง (กม.)</label><input id="fDist" type="number" inputmode="decimal" min="0" placeholder="0"></div>
+    <div class="field"><label for="fNote">รายละเอียด</label><textarea id="fNote" placeholder="เช่น เจอกัน 7 โมง ใครมีรถบอกด้วย"></textarea></div>
+    <div class="msg" id="formMsg"></div>
+    <div class="actions">
+      <button class="btn danger hide" id="btnDelete" style="flex:0 0 auto">ลบ</button>
+      <button class="btn" id="btnCancelForm">ปิด</button>
+      <button class="btn solid" id="btnSavePlan">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- แผ่นรายละเอียดนัด -->
+<div class="sheet-bg" id="detBg">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="grip"></div>
+    <div id="detBody"></div>
+    <div class="actions">
+      <button class="btn hide" id="btnEdit">แก้ไข</button>
+      <button class="btn solid" id="btnCloseDet">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- แผ่นบัญชีผู้ใช้ -->
+<div class="sheet-bg" id="accBg">
+  <div class="sheet" role="dialog" aria-modal="true" style="max-width:420px">
+    <div class="grip"></div>
+    <h3>บัญชีของฉัน</h3>
+    <div class="sub" id="accSub"></div>
+    <div class="field"><label for="accName">ชื่อที่ให้เพื่อนเห็น</label><input id="accName" maxlength="20"></div>
+    <div class="msg" id="accMsg"></div>
+    <div class="actions">
+      <button class="btn danger" id="btnLogout" style="flex:0 0 auto">ออกจากระบบ</button>
+      <button class="btn" id="btnCloseAcc">ปิด</button>
+      <button class="btn solid" id="btnSaveName">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var TH=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  var TYPE_LABEL={errand:"ไปธุระ",trip:"ไปเที่ยว",other:"อื่น ๆ"};
+  var TYPE_COLOR={errand:"#2C5F7C",trip:"#2E7D5B",other:"#7A4E8C"};
+  var RSVP={yes:"ไปแน่",maybe:"ยังไม่แน่",no:"ไม่ไป"};
+  var AV=["#2C5F7C","#2E7D5B","#7A4E8C","#B5652F","#3F6E8C","#8A6410","#4B7A5C","#8C4A5E"];
+
+  var token="", me=null, members={}, plans=[];
+  var view=new Date(), scope="month", filter="all", selDate=null;
+  var editingId=null, detId=null, pendingType="trip", authMode="login";
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function n_(v){ var x=parseFloat(v); return isFinite(x)&&x>0?x:0; }
+  function money(n){ return n.toLocaleString("th-TH",{maximumFractionDigits:0}); }
+  function km(n){ return n.toLocaleString("th-TH",{maximumFractionDigits:1}); }
+  function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2600); }
+  function hash(s){ var h=0; for(var i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return h; }
+  function nameOf(id){ return members[id] || "สมาชิก"; }
+  function avatar(name,size){
+    var s=size||24, c=AV[hash(name||"?")%AV.length];
+    return '<span class="av" style="background:'+c+';width:'+s+'px;height:'+s+'px;font-size:'+Math.round(s*.44)+'px">'+esc((name||"?").trim().charAt(0))+'</span>';
+  }
+
+  /* ---- เก็บโทเคนไว้ในเครื่อง ---- */
+  var mem={};
+  function store(k,v){ try{ v===null?localStorage.removeItem(k):localStorage.setItem(k,v); }catch(e){ mem[k]=v; } }
+  function fetchStore(k){ try{ return localStorage.getItem(k); }catch(e){ return mem[k]||null; } }
+
+  /* ---- เรียกฟังก์ชันฝั่ง Apps Script ---- */
+  function call(fn){
+    var args=Array.prototype.slice.call(arguments,1);
+    return new Promise(function(res,rej){
+      if(!window.google||!google.script||!google.script.run){
+        rej(new Error("กรุณาเปิดผ่านลิงก์ Web App ของ Apps Script")); return;
+      }
+      google.script.run.withSuccessHandler(res).withFailureHandler(function(e){
+        rej(new Error(e && e.message ? e.message : "เกิดข้อผิดพลาด"));
+      })[fn].apply(null,args);
+    });
+  }
+
+  /* ---- ออโดมิเตอร์ ---- */
+  function reel(v,suf){
+    var s=String(v), h='<div class="reel">';
+    for(var i=0;i<s.length;i++){ var c=s[i]; h+=(c===","||c===".")?'<span class="sep">'+c+'</span>':'<span>'+c+'</span>'; }
+    return h+'<span class="suffix">'+suf+'</span></div>';
+  }
+  function goingList(p,kind){ var g=p.going||{}; return Object.keys(g).filter(function(k){return g[k]===kind;}); }
+  function myRsvp(p){ return (p.going||{})[me.id]||null; }
+
+  function renderOdo(){
+    var ppl={}, myCost=0;
+    plans.forEach(function(p){
+      goingList(p,"yes").forEach(function(u){ ppl[u]=1; });
+      if(myRsvp(p)==="yes") myCost+=n_(p.cost);
+    });
+    $("odo").innerHTML=
+      '<div class="odo-unit"><div class="odo-label">นัดทั้งหมด</div>'+reel(plans.length,"นัด")+'</div>'+
+      '<div class="odo-unit"><div class="odo-label">เพื่อนที่ร่วมแล้ว</div>'+reel(Object.keys(ppl).length,"คน")+'</div>'+
+      '<div class="odo-unit"><div class="odo-label">ค่าเดินทางของฉัน</div>'+reel(money(myCost),"บาท")+'</div>';
+  }
+
+  /* ---- ตัวกรอง ---- */
+  function visible(list){
+    if(filter==="all") return list;
+    if(filter==="mine") return list.filter(function(p){ return myRsvp(p)==="yes"; });
+    return list.filter(function(p){ return p.type===filter; });
+  }
+  function ofDate(d){ return visible(plans).filter(function(p){return p.date===d;}).sort(function(a,b){return (a.start||"99").localeCompare(b.start||"99");}); }
+  function monthPlans(){
+    var y=view.getFullYear(), m=view.getMonth();
+    return visible(plans).filter(function(p){
+      if(!p.date) return false;
+      var d=new Date(p.date+"T00:00");
+      return d.getFullYear()===y && d.getMonth()===m;
+    });
+  }
+
+  /* ---- ปฏิทิน ---- */
+  function renderCalendar(){
+    var y=view.getFullYear(), m=view.getMonth();
+    $("monthLabel").textContent=TH[m]+" "+(y+543);
+    var first=new Date(y,m,1), start=new Date(y,m,1-first.getDay()), today=iso(new Date()), h="";
+    for(var i=0;i<42;i++){
+      var d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);
+      var key=iso(d), inM=d.getMonth()===m, list=inM?ofDate(key):[];
+      h+='<div class="cell'+(inM?"":" dim")+(key===today?" today":"")+(key===selDate?" sel":"")+'" data-date="'+key+'">'+
+         '<div class="daynum">'+d.getDate()+'</div>';
+      if(list.length){
+        h+='<div class="dots">';
+        list.slice(0,6).forEach(function(p){ h+='<i style="background:'+TYPE_COLOR[p.type]+'"></i>'; });
+        h+='</div>';
+        list.slice(0,2).forEach(function(p){ h+='<div class="chip '+p.type+'">'+esc(p.title)+'</div>'; });
+        if(list.length>2) h+='<div class="more">+'+(list.length-2)+' นัด</div>';
+        var ppl=0; list.forEach(function(p){ ppl+=goingList(p,"yes").length; });
+        h+='<div class="cell-sum">'+(ppl?ppl+" คนไป":"")+'</div>';
+      }
+      h+='</div>';
+    }
+    $("grid").innerHTML=h;
+  }
+
+  /* ---- รายการนัด ---- */
+  function planRow(p){
+    var d=p.date?new Date(p.date+"T00:00"):new Date();
+    var time=p.start?p.start+(p.end?"–"+p.end:""):"ยังไม่ระบุเวลา";
+    var yes=goingList(p,"yes"), mine=myRsvp(p);
+    return '<div class="plan '+p.type+'" data-id="'+p.id+'">'+
+      '<div class="pdate"><b>'+d.getDate()+'</b>'+TH[d.getMonth()].slice(0,3)+'</div>'+
+      '<div class="pbody"><div class="ptitle">'+esc(p.title)+'</div>'+
+      '<div class="pmeta">'+time+(p.place?" · "+esc(p.place):"")+' · โดย '+esc(p.ownerName||nameOf(p.ownerId))+'</div>'+
+      '<div class="faces"><div class="stack">'+yes.slice(0,5).map(function(u){return avatar(nameOf(u),22);}).join("")+'</div>'+
+      '<span class="goingnum">'+(yes.length?yes.length+" คนจะไป":"ยังไม่มีใครกด")+'</span></div>'+
+      (mine?'<span class="tagme '+mine+'">'+(mine==="no"?"คุณไม่ไป":"คุณ"+RSVP[mine])+'</span>':"")+
+      '</div>'+
+      '<div class="pright"><b>฿'+money(n_(p.cost))+'</b>'+(n_(p.dist)?km(n_(p.dist))+" กม.":"")+'</div></div>';
+  }
+  function renderList(){
+    var list,title;
+    if(selDate){
+      var d=new Date(selDate+"T00:00");
+      title="นัดวันที่ "+d.getDate()+" "+TH[d.getMonth()];
+      list=ofDate(selDate);
+      $("btnClearDay").classList.remove("hide");
+    }else{
+      title="นัดในเดือน "+TH[view.getMonth()];
+      list=monthPlans().slice().sort(function(a,b){ return a.date.localeCompare(b.date)||(a.start||"").localeCompare(b.start||""); });
+      $("btnClearDay").classList.add("hide");
+    }
+    $("listTitle").textContent=title;
+    $("listPanel").innerHTML=list.length?list.map(planRow).join(""):
+      '<div class="empty">ยังไม่มีนัดในช่วงนี้'+(selDate?' · <button class="btn sm" id="addHere">ลงนัดวันนี้</button>':'')+'</div>';
+  }
+
+  /* ---- ภาพรวม ---- */
+  function tile(k,v,u){ return '<div class="tile"><div class="k">'+k+'</div><div class="v">'+v+'<small>'+u+'</small></div></div>'; }
+  function renderOverview(){
+    var list=scope==="month"?monthPlans():visible(plans);
+    var groupCost=0,dist=0,ppl={},myCost=0,myCount=0,myDist=0;
+    list.forEach(function(p){
+      var yes=goingList(p,"yes");
+      groupCost+=n_(p.cost)*yes.length; dist+=n_(p.dist);
+      yes.forEach(function(u){ ppl[u]=(ppl[u]||0)+1; });
+      if(myRsvp(p)==="yes"){ myCost+=n_(p.cost); myDist+=n_(p.dist); myCount++; }
+    });
+    $("tiles").innerHTML=tile("จำนวนนัด",list.length,"นัด")+tile("ค่าเดินทางรวมกลุ่ม",money(groupCost),"บาท")+
+      tile("ระยะทางรวม",km(dist),"กม.")+tile("เพื่อนที่ร่วม",Object.keys(ppl).length,"คน");
+
+    var types=["trip","errand","other"],max=1,agg={};
+    types.forEach(function(t){
+      var sub=list.filter(function(p){return p.type===t;}),c=0,k=0,g=0;
+      sub.forEach(function(p){ var y=goingList(p,"yes").length; c+=n_(p.cost)*y; k+=n_(p.dist); g+=y; });
+      agg[t]={n:sub.length,c:c,k:k,g:g}; if(sub.length>max) max=sub.length;
+    });
+    $("byType").innerHTML=types.map(function(t){
+      var a=agg[t];
+      return '<div class="brow"><div class="brow-top"><b style="font-weight:500">'+TYPE_LABEL[t]+' · '+a.n+' นัด</b>'+
+        '<span>'+a.g+' คน · ฿'+money(a.c)+'</span></div>'+
+        '<div class="bar"><i style="width:'+Math.round(a.n/max*100)+'%;background:'+TYPE_COLOR[t]+'"></i></div></div>';
+    }).join("");
+
+    var rank=Object.keys(ppl).map(function(u){return {u:u,c:ppl[u]};}).sort(function(a,b){return b.c-a.c;}).slice(0,6);
+    $("ranking").innerHTML=rank.length?rank.map(function(x){
+      return '<li><span style="display:flex;align-items:center;gap:8px">'+avatar(nameOf(x.u),22)+esc(nameOf(x.u))+(x.u===me.id?" (ฉัน)":"")+'</span><span class="n">'+x.c+' นัด</span></li>';
+    }).join(""):'<li style="color:#5C6B70">ยังไม่มีใครกดว่าจะไป</li>';
+
+    $("mine").innerHTML=
+      '<li>นัดที่ฉันจะไป<span class="n">'+myCount+' นัด</span></li>'+
+      '<li>ค่าเดินทางที่ฉันต้องจ่าย<span class="n">฿'+money(myCost)+'</span></li>'+
+      '<li>ระยะทางของฉัน<span class="n">'+km(myDist)+' กม.</span></li>'+
+      '<li>เฉลี่ยต่อนัด<span class="n">฿'+money(myCount?Math.round(myCost/myCount):0)+'</span></li>';
+  }
+
+  function renderMe(){ $("meChip").innerHTML=avatar(me.name,24)+esc(me.name); }
+  function renderAll(){ renderMe(); renderOdo(); renderCalendar(); renderList(); renderOverview(); }
+
+  /* ---- โหลดข้อมูล ---- */
+  function reload(silent){
+    return call("bootstrap",token).then(function(d){
+      me=d.me; plans=d.plans||[];
+      members={}; (d.members||[]).forEach(function(m){ members[m.id]=m.name; });
+      renderAll();
+      if(!silent) toast("อัปเดตแล้ว");
+    }).catch(function(e){
+      if(/เข้าสู่ระบบ/.test(e.message)){ store("tb_token",null); showAuth(); }
+      else toast(e.message);
+    });
+  }
+
+  /* ---- ฟอร์มนัด ---- */
+  function setType(t){
+    pendingType=t;
+    Array.prototype.forEach.call($("types").children,function(b){ b.setAttribute("aria-pressed",b.dataset.t===t?"true":"false"); });
+  }
+  function openForm(date,id){
+    editingId=id||null;
+    var p=id?plans.filter(function(x){return x.id===id;})[0]:null;
+    $("formTitle").textContent=p?"แก้ไขนัด":"ลงนัดใหม่";
+    var d=new Date(((p&&p.date)||date)+"T00:00");
+    $("formSub").textContent=d.getDate()+" "+TH[d.getMonth()]+" "+(d.getFullYear()+543);
+    setType(p?p.type:"trip");
+    $("fTitle").value=p?p.title:""; $("fPlace").value=p?p.place:"";
+    $("fDate").value=p?p.date:date;
+    $("fCost").value=p&&n_(p.cost)?p.cost:""; $("fDist").value=p&&n_(p.dist)?p.dist:"";
+    $("fStart").value=p?p.start:""; $("fEnd").value=p?p.end:"";
+    $("fNote").value=p?p.note:"";
+    $("btnDelete").classList[p?"remove":"add"]("hide");
+    $("formMsg").textContent="";
+    $("formBg").classList.add("open");
+  }
+  function savePlan(){
+    var payload={
+      id:editingId, type:pendingType,
+      title:$("fTitle").value.trim(), place:$("fPlace").value.trim(),
+      date:$("fDate").value||iso(new Date()),
+      cost:$("fCost").value, dist:$("fDist").value,
+      start:$("fStart").value, end:$("fEnd").value, note:$("fNote").value.trim()
+    };
+    if(!payload.title){ $("formMsg").textContent="กรุณาใส่หัวข้อนัด"; return; }
+    $("btnSavePlan").disabled=true; $("formMsg").textContent="กำลังบันทึกลงชีต…";
+    call("savePlan",token,payload).then(function(){
+      $("formBg").classList.remove("open");
+      view=new Date(payload.date+"T00:00"); selDate=payload.date;
+      toast(editingId?"แก้ไขแล้ว":"ลงนัดแล้ว");
+      return reload(true);
+    }).catch(function(e){ $("formMsg").textContent=e.message; })
+      .then(function(){ $("btnSavePlan").disabled=false; });
+  }
+  function delPlan(){
+    if(!confirm("ลบนัดนี้ออกจากชีตเลยไหม")) return;
+    call("deletePlan",token,editingId).then(function(){
+      $("formBg").classList.remove("open"); $("detBg").classList.remove("open");
+      toast("ลบแล้ว"); return reload(true);
+    }).catch(function(e){ $("formMsg").textContent=e.message; });
+  }
+
+  /* ---- รายละเอียดนัด ---- */
+  function openDetail(id){ detId=id; renderDetail(); $("detBg").classList.add("open"); }
+  function renderDetail(){
+    var p=plans.filter(function(x){return x.id===detId;})[0];
+    if(!p){ $("detBg").classList.remove("open"); return; }
+    var d=p.date?new Date(p.date+"T00:00"):new Date();
+    var yes=goingList(p,"yes"),maybe=goingList(p,"maybe"),no=goingList(p,"no"),mine=myRsvp(p);
+    var h='<h3>'+esc(p.title)+'</h3><div class="sub">'+TYPE_LABEL[p.type]+' · '+d.getDate()+' '+TH[d.getMonth()]+' '+(d.getFullYear()+543)+' · ลงโดย '+esc(p.ownerName||nameOf(p.ownerId))+'</div>'+
+      '<div class="rsvp" id="rsvp">'+["yes","maybe","no"].map(function(k){
+        return '<button data-r="'+k+'" aria-pressed="'+(mine===k)+'">'+RSVP[k]+'</button>';
+      }).join("")+'</div>'+
+      '<div class="detrow"><span class="k">เวลา</span>'+(p.start?p.start+(p.end?" – "+p.end:""):"ยังไม่ระบุ")+'</div>'+
+      (p.place?'<div class="detrow"><span class="k">นัดเจอที่</span>'+esc(p.place)+'</div>':"")+
+      '<div class="detrow"><span class="k">ค่าเดินทาง/คน</span>฿'+money(n_(p.cost))+'</div>'+
+      (n_(p.dist)?'<div class="detrow"><span class="k">ระยะทาง</span>'+km(n_(p.dist))+' กม.</div>':"")+
+      '<div class="detrow"><span class="k">รวมทั้งกลุ่ม</span>฿'+money(n_(p.cost)*yes.length)+'</div>'+
+      (p.note?'<div class="detrow" style="display:block"><span class="k">รายละเอียด</span><div style="margin-top:4px">'+esc(p.note)+'</div></div>':"");
+
+    h+='<h3 style="font-family:var(--display);font-size:11.5px;letter-spacing:.12em;color:var(--muted);margin:14px 0 4px">คนที่จะไป ('+yes.length+')</h3>';
+    h+=yes.length?yes.map(function(u){ return '<div class="person">'+avatar(nameOf(u),24)+esc(nameOf(u))+(u===me.id?" (ฉัน)":"")+'</div>'; }).join(""):'<div class="person" style="color:var(--muted)">ยังไม่มีใครกดว่าจะไป</div>';
+    if(maybe.length) h+='<div class="person" style="color:var(--muted);font-size:12.5px">ยังไม่แน่: '+maybe.map(function(u){return esc(nameOf(u));}).join(", ")+'</div>';
+    if(no.length) h+='<div class="person" style="color:var(--muted);font-size:12.5px">ไม่ไป: '+no.map(function(u){return esc(nameOf(u));}).join(", ")+'</div>';
+
+    h+='<div class="cmt"><h3 style="font-family:var(--display);font-size:11.5px;letter-spacing:.12em;color:var(--muted);margin:0 0 4px">คุยกันเรื่องนัดนี้</h3>';
+    h+=(p.comments&&p.comments.length)?p.comments.map(function(c){
+      return '<div class="item">'+avatar(c.name||nameOf(c.by),24)+'<div class="txt"><b>'+esc(c.name||nameOf(c.by))+'</b>'+esc(c.text)+'</div></div>';
+    }).join(""):'<div class="person" style="color:var(--muted)">ยังไม่มีข้อความ</div>';
+    h+='<div class="cmtbox"><input id="cInput" placeholder="พิมพ์ข้อความ" maxlength="200"><button class="btn" id="cSend">ส่ง</button></div></div>';
+
+    $("detBody").innerHTML=h;
+    $("btnEdit").classList[p.ownerId===me.id?"remove":"add"]("hide");
+  }
+  function setRsvp(kind){
+    var id=detId;
+    call("setRsvp",token,id,kind).then(function(r){
+      plans.forEach(function(p){ if(p.id===id) p.going=r.going; });
+      renderDetail(); renderAll();
+    }).catch(function(e){ toast(e.message); });
+  }
+  function sendComment(){
+    var el=$("cInput"); if(!el||!el.value.trim()) return;
+    var text=el.value.trim(), id=detId; el.value="";
+    call("addComment",token,id,text).then(function(r){
+      plans.forEach(function(p){ if(p.id===id) p.comments=r.comments; });
+      renderDetail();
+    }).catch(function(e){ toast(e.message); });
+  }
+
+  /* ---- เข้าสู่ระบบ ---- */
+  function showAuth(){
+    $("loading").classList.add("hide");
+    $("appView").classList.add("hide");
+    $("authView").classList.remove("hide");
+  }
+  function showApp(){
+    $("loading").classList.add("hide");
+    $("authView").classList.add("hide");
+    $("appView").classList.remove("hide");
+  }
+  function setAuthMode(m){
+    authMode=m;
+    Array.prototype.forEach.call($("authTabs").children,function(b){ b.setAttribute("aria-pressed",b.dataset.m===m?"true":"false"); });
+    document.querySelectorAll(".regOnly").forEach(function(el){ el.classList[m==="register"?"remove":"add"]("hide"); });
+    $("btnAuth").textContent=m==="register"?"สมัครสมาชิก":"เข้าสู่ระบบ";
+    $("aPass").setAttribute("autocomplete",m==="register"?"new-password":"current-password");
+    $("authMsg").textContent="";
+  }
+  function doAuth(){
+    var payload={username:$("aUser").value.trim(),name:$("aName").value.trim(),password:$("aPass").value};
+    if(!payload.username||!payload.password){ $("authMsg").textContent="กรอกชื่อผู้ใช้และรหัสผ่านให้ครบ"; return; }
+    $("btnAuth").disabled=true; $("authMsg").textContent="กำลังตรวจสอบ…";
+    call(authMode==="register"?"register":"login",payload).then(function(r){
+      token=r.token; store("tb_token",token); me=r.user;
+      $("authMsg").textContent=""; $("aPass").value="";
+      showApp(); return reload(true);
+    }).catch(function(e){ $("authMsg").textContent=e.message; })
+      .then(function(){ $("btnAuth").disabled=false; });
+  }
+
+  /* ---- เหตุการณ์ ---- */
+  $("authTabs").onclick=function(e){ var b=e.target.closest("button"); if(b) setAuthMode(b.dataset.m); };
+  $("btnAuth").onclick=doAuth;
+  $("aPass").onkeydown=function(e){ if(e.key==="Enter") doAuth(); };
+
+  $("prev").onclick=function(){ view=new Date(view.getFullYear(),view.getMonth()-1,1); selDate=null; renderCalendar(); renderList(); renderOverview(); };
+  $("next").onclick=function(){ view=new Date(view.getFullYear(),view.getMonth()+1,1); selDate=null; renderCalendar(); renderList(); renderOverview(); };
+  $("btnRefresh").onclick=function(){ reload(false); };
+  $("btnClearDay").onclick=function(){ selDate=null; renderCalendar(); renderList(); };
+  $("fab").onclick=function(){ openForm(selDate||iso(new Date())); };
+  $("filter").onchange=function(){ filter=this.value; renderCalendar(); renderList(); renderOverview(); };
+  $("scope").onclick=function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    scope=b.dataset.s;
+    Array.prototype.forEach.call(this.children,function(x){ x.setAttribute("aria-pressed",x===b?"true":"false"); });
+    renderOverview();
+  };
+  $("grid").onclick=function(e){
+    var c=e.target.closest(".cell"); if(!c||c.classList.contains("dim")) return;
+    selDate=c.dataset.date; renderCalendar(); renderList();
+    document.querySelector("#listTitle").scrollIntoView({behavior:"smooth",block:"start"});
+  };
+  $("listPanel").onclick=function(e){
+    if(e.target.id==="addHere"){ openForm(selDate); return; }
+    var r=e.target.closest(".plan"); if(r) openDetail(r.dataset.id);
+  };
+  $("types").onclick=function(e){ var b=e.target.closest("button"); if(b) setType(b.dataset.t); };
+  $("btnSavePlan").onclick=savePlan;
+  $("btnDelete").onclick=delPlan;
+  $("btnCancelForm").onclick=function(){ $("formBg").classList.remove("open"); };
+  $("formBg").onclick=function(e){ if(e.target===this) this.classList.remove("open"); };
+
+  $("detBody").onclick=function(e){
+    var r=e.target.closest("#rsvp button"); if(r){ setRsvp(r.dataset.r); return; }
+    if(e.target.id==="cSend") sendComment();
+  };
+  $("detBody").onkeydown=function(e){ if(e.target.id==="cInput"&&e.key==="Enter") sendComment(); };
+  $("btnEdit").onclick=function(){ $("detBg").classList.remove("open"); openForm(null,detId); };
+  $("btnCloseDet").onclick=function(){ $("detBg").classList.remove("open"); };
+  $("detBg").onclick=function(e){ if(e.target===this) this.classList.remove("open"); };
+
+  $("meChip").onclick=function(){
+    $("accName").value=me.name; $("accSub").textContent="ชื่อผู้ใช้: "+me.username;
+    $("accMsg").textContent=""; $("accBg").classList.add("open");
+  };
+  $("btnSaveName").onclick=function(){
+    var v=$("accName").value.trim();
+    if(!v){ $("accMsg").textContent="กรุณาใส่ชื่อ"; return; }
+    call("changeName",token,v).then(function(){
+      $("accBg").classList.remove("open"); toast("เปลี่ยนชื่อแล้ว"); return reload(true);
+    }).catch(function(e){ $("accMsg").textContent=e.message; });
+  };
+  $("btnCloseAcc").onclick=function(){ $("accBg").classList.remove("open"); };
+  $("btnLogout").onclick=function(){
+    call("logout",token).catch(function(){});
+    store("tb_token",null); token=""; $("accBg").classList.remove("open"); showAuth();
+  };
+  $("accBg").onclick=function(e){ if(e.target===this) this.classList.remove("open"); };
+
+  // ดึงข้อมูลใหม่เมื่อกลับมาที่หน้าจอ
+  document.addEventListener("visibilitychange",function(){
+    if(!document.hidden && token && !document.querySelector(".sheet-bg.open")) reload(true);
+  });
+
+  /* ---- เริ่มทำงาน ---- */
+  setAuthMode("login");
+  token=fetchStore("tb_token")||"";
+  if(!token){ showAuth(); }
+  else{
+    call("bootstrap",token).then(function(d){
+      me=d.me; plans=d.plans||[];
+      members={}; (d.members||[]).forEach(function(m){ members[m.id]=m.name; });
+      showApp(); renderAll();
+    }).catch(function(){ store("tb_token",null); showAuth(); });
+  }
+})();
+</script>
+</body>
+</html>
