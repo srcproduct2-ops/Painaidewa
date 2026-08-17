@@ -186,6 +186,27 @@
   .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(16px);background:var(--ink);color:#fff;font-size:13.5px;padding:11px 17px;border-radius:10px;opacity:0;pointer-events:none;transition:.25s;z-index:90;max-width:92vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .loading{position:fixed;inset:0;background:var(--paper);display:grid;place-items:center;z-index:100;font-family:var(--display);color:var(--muted)}
+  .loading .box{display:flex;flex-direction:column;align-items:center;gap:14px}
+
+  /* แถบโหลดด้านบนจอ */
+  #topbar{position:fixed;top:0;left:0;right:0;height:3px;z-index:200;overflow:hidden;
+          opacity:0;transition:opacity .25s;pointer-events:none}
+  #topbar.on{opacity:1}
+  #topbar i{display:block;height:100%;width:38%;border-radius:0 3px 3px 0;
+            background:linear-gradient(90deg,rgba(240,180,41,0),var(--amber),#2E7D5B,rgba(46,125,91,0));
+            animation:slide 1.15s cubic-bezier(.4,0,.2,1) infinite}
+  @keyframes slide{0%{transform:translateX(-105%)}100%{transform:translateX(365%)}}
+
+  /* วงกลมหมุนในปุ่ม */
+  .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;
+           border-radius:50%;display:inline-block;vertical-align:-3px;margin-right:8px;
+           animation:spin .7s linear infinite}
+  .spinner.dark{border-color:rgba(21,32,37,.18);border-top-color:var(--ink)}
+  .spinner.big{width:30px;height:30px;border-width:3px;margin:0}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* จาง ๆ ตอนกำลังดึงข้อมูลใหม่ */
+  .syncing{opacity:.55;transition:opacity .2s}
   footer{margin-top:22px;color:var(--muted);font-size:12px;text-align:center}
 
   @media (max-width:760px){ .tiles{grid-template-columns:1fr 1fr} .panels{grid-template-columns:1fr} }
@@ -197,12 +218,16 @@
     .odo{gap:14px}
     .reel span{font-size:17px;min-width:15px;padding:5px 4px}
   }
-  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}
+    #topbar i,.spinner{animation-duration:2.5s}}
 </style>
 </head>
 <body>
 
-<div class="loading" id="loading">กำลังโหลด…</div>
+<div id="topbar"><i></i></div>
+<div class="loading" id="loading">
+  <div class="box"><span class="spinner dark big"></span><span>กำลังโหลดข้อมูลจากชีต…</span></div>
+</div>
 
 <!-- ===== เข้าสู่ระบบ / สมัครสมาชิก ===== -->
 <div id="authView" class="hide">
@@ -403,10 +428,22 @@
   /* ---- ที่อยู่ของ Apps Script (ลงท้ายด้วย /exec) ---- */
   var API="https://script.google.com/macros/s/AKfycbx5YHeu2-O81PrSLK5jMd4d-IWHssLe5h9AT5Tw9dzaHOuutTPFJcBmGEAQGvmEpqTY/exec";
 
+  /* ---- แถบโหลดด้านบน ---- */
+  var netN=0;
+  function netStart(){ netN++; $("topbar").classList.add("on"); }
+  function netEnd(){ netN=Math.max(0,netN-1); if(!netN) $("topbar").classList.remove("on"); }
+  function spin(txt,dark){ return '<span class="spinner'+(dark?" dark":"")+'"></span>'+txt; }
+
   /* ---- เรียกฟังก์ชันฝั่ง Apps Script ----
      เปิดจาก Apps Script จะใช้ google.script.run
      เปิดจาก GitHub Pages หรือที่อื่นจะใช้ fetch ไปที่ API ข้างบน  */
   function call(fn){
+    netStart();
+    return call_.apply(null,arguments).then(
+      function(v){ netEnd(); return v; },
+      function(e){ netEnd(); throw e; });
+  }
+  function call_(fn){
     var args=Array.prototype.slice.call(arguments,1);
     if(window.google && google.script && google.script.run){
       return new Promise(function(res,rej){
@@ -648,14 +685,15 @@
       start:$("fStart").value, end:$("fEnd").value, note:$("fNote").value.trim()
     };
     if(!payload.title && !payload.busy){ $("formMsg").textContent="กรุณาใส่หัวข้อนัด"; return; }
-    $("btnSavePlan").disabled=true; $("formMsg").textContent="กำลังบันทึกลงชีต…";
+    $("btnSavePlan").disabled=true; $("btnSavePlan").innerHTML=spin("กำลังบันทึก…");
+    $("formMsg").textContent="";
     call("savePlan",token,payload).then(function(){
       $("formBg").classList.remove("open");
       view=new Date(payload.date+"T00:00"); selDate=payload.date;
       toast(editingId?"แก้ไขแล้ว":(payload.busy?"แจ้งวันไม่ว่างแล้ว":"ลงนัดแล้ว"));
       return reload(true);
     }).catch(function(e){ $("formMsg").textContent=e.message; })
-      .then(function(){ $("btnSavePlan").disabled=false; });
+      .then(function(){ $("btnSavePlan").disabled=false; $("btnSavePlan").textContent="บันทึก"; });
   }
   function delPlan(){
     if(!confirm("ลบนัดนี้ออกจากชีตเลยไหม")) return;
@@ -728,7 +766,7 @@
   function saveRsvp(){
     var id=detId, val=pendingRsvp, sb=$("btnSaveRsvp");
     if(val===null) return;
-    sb.disabled=true; sb.textContent="กำลังบันทึก…";
+    sb.disabled=true; sb.innerHTML=spin("กำลังบันทึก…");
     call("setRsvp",token,id,val||"none").then(function(r){
       plans.forEach(function(p){ if(p.id===id) p.going=r.going; });
       pendingRsvp=null;
@@ -740,11 +778,14 @@
   }
   function sendComment(){
     var el=$("cInput"); if(!el||!el.value.trim()) return;
-    var text=el.value.trim(), id=detId; el.value="";
+    var text=el.value.trim(), id=detId, sb=$("cSend");
+    el.value=""; sb.disabled=true; sb.innerHTML='<span class="spinner dark"></span>';
     call("addComment",token,id,text).then(function(r){
       plans.forEach(function(p){ if(p.id===id) p.comments=r.comments; });
       renderDetail();
-    }).catch(function(e){ toast(e.message); });
+    }).catch(function(e){
+      toast(e.message); sb.disabled=false; sb.textContent="ส่ง";
+    });
   }
 
   /* ---- เข้าสู่ระบบ ---- */
@@ -769,13 +810,16 @@
   function doAuth(){
     var payload={username:$("aUser").value.trim(),name:$("aName").value.trim(),password:$("aPass").value};
     if(!payload.username||!payload.password){ $("authMsg").textContent="กรอกชื่อผู้ใช้และรหัสผ่านให้ครบ"; return; }
-    $("btnAuth").disabled=true; $("authMsg").textContent="กำลังตรวจสอบ…";
+    $("btnAuth").disabled=true; $("btnAuth").innerHTML=spin("กำลังตรวจสอบ…"); $("authMsg").textContent="";
     call(authMode==="register"?"register":"login",payload).then(function(r){
       token=r.token; store("tb_token",token); me=r.user;
       $("authMsg").textContent=""; $("aPass").value="";
       showApp(); return reload(true);
     }).catch(function(e){ $("authMsg").textContent=e.message; })
-      .then(function(){ $("btnAuth").disabled=false; });
+      .then(function(){
+        $("btnAuth").disabled=false;
+        $("btnAuth").textContent=authMode==="register"?"สมัครสมาชิก":"เข้าสู่ระบบ";
+      });
   }
 
   /* ---- เหตุการณ์ ---- */
@@ -785,7 +829,16 @@
 
   $("prev").onclick=function(){ view=new Date(view.getFullYear(),view.getMonth()-1,1); selDate=null; renderCalendar(); renderList(); renderOverview(); };
   $("next").onclick=function(){ view=new Date(view.getFullYear(),view.getMonth()+1,1); selDate=null; renderCalendar(); renderList(); renderOverview(); };
-  $("btnRefresh").onclick=function(){ reload(false); };
+  $("btnRefresh").onclick=function(){
+    var b=this; b.disabled=true; b.innerHTML='<span class="spinner dark"></span>';
+    document.querySelector(".cal").classList.add("syncing");
+    $("listPanel").classList.add("syncing");
+    reload(false).then(function(){
+      b.disabled=false; b.textContent="รีเฟรช";
+      document.querySelector(".cal").classList.remove("syncing");
+      $("listPanel").classList.remove("syncing");
+    });
+  };
   $("btnClearDay").onclick=function(){ selDate=null; renderCalendar(); renderList(); };
   $("fab").onclick=function(){ openForm(selDate||iso(new Date())); };
   $("filter").onchange=function(){ filter=this.value; renderCalendar(); renderList(); renderOverview(); };
