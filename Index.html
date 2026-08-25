@@ -153,6 +153,28 @@
   .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
   .empty{color:var(--muted);font-size:13.5px;padding:16px 0;text-align:center}
 
+  /* ตาราง List All */
+  .mhead{font-family:var(--display);font-size:11.5px;letter-spacing:.1em;color:var(--muted);
+         background:#F1F4F3;border-radius:7px;padding:6px 11px;margin:14px 0 2px}
+  .mhead:first-child{margin-top:0}
+  .arow{display:grid;grid-template-columns:78px 1fr auto auto;gap:10px;align-items:center;
+        padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px}
+  .arow:last-child{border-bottom:none}
+  .arow:hover{background:#F6F9F8}
+  .arow.busyrow{opacity:.72}
+  .adate{font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap}
+  .adate small{color:var(--muted);margin-left:2px}
+  .atitle{font-size:14px;min-width:0}
+  .atitle small{display:block;font-size:12px;color:var(--muted);font-family:var(--mono);
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .apeople{display:flex;align-items:center}
+  .apeople .av{margin-right:-5px;border:2px solid var(--card);width:20px;height:20px;font-size:9px}
+  .amoney{font-family:var(--mono);font-size:13px;white-space:nowrap;color:var(--muted)}
+  @media (max-width:560px){
+    .arow{grid-template-columns:62px 1fr auto;gap:8px}
+    .amoney{display:none}
+  }
+
   /* ===== ปุ่มลอย + แผ่นเลื่อน ===== */
   .fab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:40;
        background:var(--ink);color:#fff;border:none;border-radius:999px;padding:15px 22px;
@@ -248,23 +270,13 @@
 <div id="authView" class="hide">
   <div class="auth">
     <h1>ไปไหนดีว๊า</h1>
-    <p class="lead">เข้าสู่ระบบเพื่อลงนัดและกดว่าจะไปกับเพื่อน</p>
-    <div class="tabs" id="authTabs">
-      <button data-m="login" aria-pressed="true">เข้าสู่ระบบ</button>
-      <button data-m="register" aria-pressed="false">สมัครสมาชิก</button>
-    </div>
-    <div class="field"><label for="aUser">ชื่อผู้ใช้</label>
-      <input id="aUser" autocomplete="username" autocapitalize="none" placeholder="เช่น beam01"></div>
-    <div class="field regOnly hide"><label for="aName">ชื่อที่ให้เพื่อนเห็น</label>
-      <input id="aName" placeholder="เช่น บีม" maxlength="20"></div>
-    <div class="field"><label for="aPass" id="lbPass">รหัสผ่าน</label>
-      <input id="aPass" type="password" autocomplete="current-password" placeholder="อย่างน้อย 4 ตัว"></div>
-    <div class="field recOnly hide"><label for="aRec" id="lbRec">คำลับไว้กู้รหัสผ่าน</label>
-      <input id="aRec" autocapitalize="none" placeholder="เช่น ชื่อหมาตัวแรก" maxlength="40"></div>
-    <div class="hint recOnly hide" id="recHint">จำคำนี้ไว้ให้ดี ถ้าลืมรหัสผ่านจะใช้คำนี้ตั้งรหัสใหม่เอง</div>
+    <p class="lead">ใส่ชื่อเล่นแล้วเริ่มใช้ได้เลย ไม่ต้องสมัคร ไม่ต้องจำรหัส</p>
+    <div class="field"><label for="aName">ชื่อเล่นของคุณ</label>
+      <input id="aName" placeholder="เช่น บีม" maxlength="20" autocomplete="nickname"></div>
+    <div class="hint">เพื่อนจะเห็นชื่อนี้บนนัดที่คุณลงและตรงรายชื่อคนที่จะไป
+      ถ้าเคยใช้ชื่อนี้แล้ว ระบบจะจำนัดเดิมของคุณไว้ให้</div>
     <div class="msg" id="authMsg"></div>
-    <button class="btn solid full" id="btnAuth">เข้าสู่ระบบ</button>
-    <button class="linkbtn" id="lnkForgot">ลืมรหัสผ่าน?</button>
+    <button class="btn solid full" id="btnAuth">เริ่มใช้งาน</button>
   </div>
 </div>
 
@@ -327,6 +339,19 @@
         <h3 style="margin-top:15px">ตัวเลขของฉัน</h3><ul class="plist" id="mine"></ul>
       </div>
     </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>List All</h2>
+      <div class="seg" id="allScope">
+        <button data-a="upcoming" aria-pressed="true">ที่ยังไม่ถึง</button>
+        <button data-a="all" aria-pressed="false">ทั้งหมด</button>
+      </div>
+      <div class="spacer"></div>
+      <span class="goingnum" id="allCount"></span>
+    </div>
+    <div class="panel" id="allPanel"></div>
   </section>
 
   <footer>บันทึกนัดที่ชีต Record1 · สมาชิกที่ชีต User01</footer>
@@ -392,28 +417,15 @@
 <div class="sheet-bg" id="accBg">
   <div class="sheet" role="dialog" aria-modal="true" style="max-width:420px">
     <div class="grip"></div>
-    <h3>บัญชีของฉัน</h3>
+    <h3>ชื่อของฉัน</h3>
     <div class="sub" id="accSub"></div>
-    <div class="field"><label for="accName">ชื่อที่ให้เพื่อนเห็น</label><input id="accName" maxlength="20"></div>
+    <div class="field"><label for="accName">ชื่อเล่น</label><input id="accName" maxlength="20"></div>
+    <div class="hint">เปลี่ยนแล้วชื่อบนนัดเก่าของคุณจะเปลี่ยนตามทั้งหมด</div>
     <div class="msg" id="accMsg"></div>
     <div class="actions">
+      <button class="btn danger" id="btnLogout" style="flex:0 0 auto">สลับคน</button>
       <button class="btn" id="btnCloseAcc">ปิด</button>
       <button class="btn solid" id="btnSaveName">บันทึกชื่อ</button>
-    </div>
-
-    <div class="divider"></div>
-    <h3 style="font-size:15px">เปลี่ยนรหัสผ่าน / คำลับ</h3>
-    <div class="hint" style="margin:4px 0 12px">กรอกเฉพาะช่องที่อยากเปลี่ยน เว้นว่างช่องที่ไม่เปลี่ยนได้</div>
-    <div class="field"><label for="pwOld">รหัสผ่านปัจจุบัน</label>
-      <input id="pwOld" type="password" autocomplete="current-password"></div>
-    <div class="field"><label for="pwNew">รหัสผ่านใหม่</label>
-      <input id="pwNew" type="password" autocomplete="new-password" placeholder="อย่างน้อย 4 ตัว"></div>
-    <div class="field"><label for="recNew">คำลับใหม่</label>
-      <input id="recNew" autocapitalize="none" placeholder="เว้นว่างถ้าไม่เปลี่ยน" maxlength="40"></div>
-    <div class="msg" id="pwMsg"></div>
-    <div class="actions">
-      <button class="btn danger" id="btnLogout" style="flex:0 0 auto">ออกจากระบบ</button>
-      <button class="btn solid" id="btnSavePw">บันทึกรหัสผ่าน</button>
     </div>
   </div>
 </div>
@@ -430,9 +442,9 @@
   var RSVP={yes:"ไปแน่",maybe:"ยังไม่แน่",no:"ไม่ไป"};
   var AV=["#2C5F7C","#2E7D5B","#7A4E8C","#B5652F","#3F6E8C","#8A6410","#4B7A5C","#8C4A5E"];
 
-  var token="", me=null, members={}, plans=[];
+  var uid="", me=null, members={}, plans=[];
   var view=new Date(), scope="month", filter="all", selDate=null;
-  var editingId=null, detId=null, pendingType="trip", authMode="login", pendingRsvp=null;
+  var editingId=null, detId=null, pendingType="trip", pendingRsvp=null, allScope="upcoming";
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
@@ -464,11 +476,9 @@
   /* ---- แถบโหลดด้านบน ---- */
   var netN=0, netAt=0, netTimer=null;
   var NET_TEXT={
-    bootstrap:"กำลังโหลดข้อมูลจากชีต…", savePlan:"กำลังบันทึกนัดลงชีต…",
+    joinAs:"กำลังเข้าใช้งาน…", bootstrap:"กำลังโหลดข้อมูลจากชีต…", savePlan:"กำลังบันทึกนัดลงชีต…",
     deletePlan:"กำลังลบออกจากชีต…",   setRsvp:"กำลังบันทึกคำตอบ…",
-    addComment:"กำลังส่งข้อความ…",     login:"กำลังเข้าสู่ระบบ…",
-    register:"กำลังสมัครสมาชิก…",      resetPassword:"กำลังตั้งรหัสผ่านใหม่…",
-    updateSecurity:"กำลังบันทึกรหัสผ่าน…", changeName:"กำลังบันทึกชื่อ…", logout:"กำลังออกจากระบบ…"
+    addComment:"กำลังส่งข้อความ…",     changeName:"กำลังบันทึกชื่อ…"
   };
   function netShow(on){
     $("topbar").classList[on?"add":"remove"]("on");
@@ -676,18 +686,57 @@
       '<li>วันที่ฉันแจ้งไม่ว่าง<span class="n">'+myBusy+' วัน</span></li>';
   }
 
+  /* ---- List All: นัดของทุกคนรวมกัน ---- */
+  var DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
+  function renderAllList(){
+    var today=iso(new Date());
+    var list=plans.slice().filter(function(p){ return p.date; })
+      .sort(function(a,b){ return a.date.localeCompare(b.date)||(a.start||"").localeCompare(b.start||""); });
+    if(allScope==="upcoming") list=list.filter(function(p){ return p.date>=today; });
+    else list.reverse();
+
+    var meetN=list.filter(function(p){ return !p.busy; }).length;
+    var busyN=list.length-meetN;
+    $("allCount").textContent=meetN+" นัด"+(busyN?" · "+busyN+" วันไม่ว่าง":"");
+
+    if(!list.length){
+      $("allPanel").innerHTML='<div class="empty">'+(allScope==="upcoming"?"ไม่มีนัดที่ยังไม่ถึง":"ยังไม่มีรายการ")+'</div>';
+      return;
+    }
+    var h="", cur="";
+    list.forEach(function(p){
+      var d=new Date(p.date+"T00:00"), key=p.date.slice(0,7);
+      if(key!==cur){ cur=key; h+='<div class="mhead">'+TH[d.getMonth()]+" "+(d.getFullYear()+543)+'</div>'; }
+      var owner=esc(p.ownerName||nameOf(p.ownerId));
+      var yes=goingList(p,"yes");
+      h+='<div class="arow'+(p.busy?" busyrow":"")+'" data-id="'+p.id+'">'+
+        '<div class="adate">'+d.getDate()+' '+TH[d.getMonth()].slice(0,3)+' <small>'+DOW[d.getDay()]+'</small></div>'+
+        '<div class="atitle">'+(p.busy?owner+' ไม่ว่าง':esc(p.title))+
+          '<small>'+(p.busy
+            ? (p.title&&p.title!=="ไม่ว่าง"?esc(p.title):"ทั้งวัน")
+            : (p.start?p.start+(p.end?"–"+p.end:""):"ยังไม่ระบุเวลา")+(p.place?" · "+esc(p.place):"")+" · โดย "+owner)+
+          '</small></div>'+
+        '<div class="apeople">'+(p.busy?'<span class="goingnum">—</span>'
+          : yes.slice(0,4).map(function(u){ return avatar(nameOf(u),20); }).join("")+
+            '<span class="goingnum">'+yes.length+' คน</span>')+'</div>'+
+        '<div class="amoney">'+(p.busy?"":"฿"+money(n_(p.cost)))+'</div>'+
+      '</div>';
+    });
+    $("allPanel").innerHTML=h;
+  }
+
   function renderMe(){ $("meChip").innerHTML=avatar(me.name,24)+esc(me.name); }
-  function renderAll(){ renderMe(); renderOdo(); renderCalendar(); renderList(); renderOverview(); }
+  function renderAll(){ renderMe(); renderOdo(); renderCalendar(); renderList(); renderOverview(); renderAllList(); }
 
   /* ---- โหลดข้อมูล ---- */
   function reload(silent){
-    return call("bootstrap",token).then(function(d){
+    return call("bootstrap",uid).then(function(d){
       me=d.me; plans=d.plans||[];
       members={}; (d.members||[]).forEach(function(m){ members[m.id]=m.name; });
       renderAll();
       if(!silent) toast("อัปเดตแล้ว");
     }).catch(function(e){
-      if(/เข้าสู่ระบบ/.test(e.message)){ store("tb_token",null); showAuth(); }
+      if(/ไม่พบชื่อ|ใส่ชื่อ/.test(e.message)){ store("tb_uid",null); showAuth(); }
       else toast(e.message);
     });
   }
@@ -741,7 +790,7 @@
     if(!payload.title && !payload.busy){ $("formMsg").textContent="กรุณาใส่หัวข้อนัด"; return; }
     $("btnSavePlan").disabled=true; $("btnSavePlan").innerHTML=spin("กำลังบันทึก…");
     $("formMsg").textContent="";
-    call("savePlan",token,payload).then(function(){
+    call("savePlan",uid,payload).then(function(){
       $("formBg").classList.remove("open");
       view=new Date(payload.date+"T00:00"); selDate=payload.date;
       toast(editingId?"แก้ไขแล้ว":(payload.busy?"แจ้งวันไม่ว่างแล้ว":"ลงนัดแล้ว"));
@@ -751,7 +800,7 @@
   }
   function delPlan(){
     if(!confirm("ลบนัดนี้ออกจากชีตเลยไหม")) return;
-    call("deletePlan",token,editingId).then(function(){
+    call("deletePlan",uid,editingId).then(function(){
       $("formBg").classList.remove("open"); $("detBg").classList.remove("open");
       toast("ลบแล้ว"); return reload(true);
     }).catch(function(e){ $("formMsg").textContent=e.message; });
@@ -821,7 +870,7 @@
     var id=detId, val=pendingRsvp, sb=$("btnSaveRsvp");
     if(val===null) return;
     sb.disabled=true; sb.innerHTML=spin("กำลังบันทึก…");
-    call("setRsvp",token,id,val||"none").then(function(r){
+    call("setRsvp",uid,id,val||"none").then(function(r){
       plans.forEach(function(p){ if(p.id===id) p.going=r.going; });
       pendingRsvp=null;
       renderDetail(); renderOdo(); renderCalendar(); renderList(); renderOverview();
@@ -834,7 +883,7 @@
     var el=$("cInput"); if(!el||!el.value.trim()) return;
     var text=el.value.trim(), id=detId, sb=$("cSend");
     el.value=""; sb.disabled=true; sb.innerHTML='<span class="spinner dark"></span>';
-    call("addComment",token,id,text).then(function(r){
+    call("addComment",uid,id,text).then(function(r){
       plans.forEach(function(p){ if(p.id===id) p.comments=r.comments; });
       renderDetail();
     }).catch(function(e){
@@ -853,50 +902,32 @@
     $("authView").classList.add("hide");
     $("appView").classList.remove("hide");
   }
-  function setAuthMode(m){
-    authMode=m;
-    Array.prototype.forEach.call($("authTabs").children,function(b){
-      b.setAttribute("aria-pressed",b.dataset.m===m?"true":"false");
-    });
-    document.querySelectorAll(".regOnly").forEach(function(el){ el.classList[m==="register"?"remove":"add"]("hide"); });
-    document.querySelectorAll(".recOnly").forEach(function(el){ el.classList[m==="login"?"add":"remove"]("hide"); });
-    $("btnAuth").textContent = m==="register"?"สมัครสมาชิก":(m==="forgot"?"ตั้งรหัสผ่านใหม่":"เข้าสู่ระบบ");
-    $("lbPass").textContent  = m==="forgot"?"รหัสผ่านใหม่":"รหัสผ่าน";
-    $("lbRec").textContent   = m==="forgot"?"คำลับที่ตั้งไว้ตอนสมัคร":"คำลับไว้กู้รหัสผ่าน";
-    $("recHint").textContent = m==="forgot"?"ต้องตอบให้ตรงกับที่ตั้งไว้ตอนสมัคร ตัวพิมพ์เล็กใหญ่ไม่มีผล"
-                                          :"จำคำนี้ไว้ให้ดี ถ้าลืมรหัสผ่านจะใช้คำนี้ตั้งรหัสใหม่เอง";
-    $("lnkForgot").textContent = m==="forgot"?"กลับไปหน้าเข้าสู่ระบบ":"ลืมรหัสผ่าน?";
-    $("aPass").setAttribute("autocomplete",m==="login"?"current-password":"new-password");
-    $("authMsg").textContent="";
-  }
-  function doAuth(){
-    var payload={username:$("aUser").value.trim(),name:$("aName").value.trim(),
-                 password:$("aPass").value,recovery:$("aRec").value.trim()};
-    if(!payload.username||!payload.password){ $("authMsg").textContent="กรอกชื่อผู้ใช้และรหัสผ่านให้ครบ"; return; }
-    if(authMode!=="login" && !payload.recovery){ $("authMsg").textContent="กรอกคำลับด้วย"; return; }
-    $("btnAuth").disabled=true; $("btnAuth").innerHTML=spin("กำลังตรวจสอบ…"); $("authMsg").textContent="";
-    var fn = authMode==="register" ? "register" : (authMode==="forgot" ? "resetPassword" : "login");
-    call(fn,payload).then(function(r){
-      token=r.token; store("tb_token",token); me=r.user;
-      $("authMsg").textContent=""; $("aPass").value=""; $("aRec").value="";
-      if(authMode==="forgot") toast("ตั้งรหัสผ่านใหม่แล้ว");
+  function doJoin(){
+    var name=$("aName").value.trim();
+    if(!name){ $("authMsg").textContent="ใส่ชื่อเล่นก่อนนะ"; return; }
+    $("btnAuth").disabled=true; $("btnAuth").innerHTML=spin("กำลังเข้าใช้งาน…"); $("authMsg").textContent="";
+    call("joinAs",name).then(function(r){
+      uid=r.user.id; store("tb_uid",uid); me=r.user;
       showApp(); return reload(true);
     }).catch(function(e){ $("authMsg").textContent=e.message; })
-      .then(function(){
-        $("btnAuth").disabled=false;
-        $("btnAuth").textContent=authMode==="register"?"สมัครสมาชิก":(authMode==="forgot"?"ตั้งรหัสผ่านใหม่":"เข้าสู่ระบบ");
-      });
+      .then(function(){ $("btnAuth").disabled=false; $("btnAuth").textContent="เริ่มใช้งาน"; });
   }
 
   /* ---- เหตุการณ์ ---- */
-  $("authTabs").onclick=function(e){ var b=e.target.closest("button"); if(b) setAuthMode(b.dataset.m); };
-  $("btnAuth").onclick=doAuth;
-  $("lnkForgot").onclick=function(){ setAuthMode(authMode==="forgot"?"login":"forgot"); };
-  $("aRec").onkeydown=function(e){ if(e.key==="Enter") doAuth(); };
-  $("aPass").onkeydown=function(e){ if(e.key==="Enter") doAuth(); };
+  $("btnAuth").onclick=doJoin;
+  $("aName").onkeydown=function(e){ if(e.key==="Enter") doJoin(); };
 
   $("prev").onclick=function(){ view=new Date(view.getFullYear(),view.getMonth()-1,1); selDate=null; renderCalendar(); renderList(); renderOverview(); };
   $("next").onclick=function(){ view=new Date(view.getFullYear(),view.getMonth()+1,1); selDate=null; renderCalendar(); renderList(); renderOverview(); };
+  $("allScope").onclick=function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    allScope=b.dataset.a;
+    Array.prototype.forEach.call(this.children,function(x){ x.setAttribute("aria-pressed",x===b?"true":"false"); });
+    renderAllList();
+  };
+  $("allPanel").onclick=function(e){
+    var r=e.target.closest(".arow"); if(r) openDetail(r.dataset.id);
+  };
   $("btnRefresh").onclick=function(){
     var b=this; b.disabled=true; b.innerHTML='<span class="spinner dark"></span>';
     document.querySelector(".cal").classList.add("syncing");
@@ -947,56 +978,31 @@
   $("detBg").onclick=function(e){ if(e.target===this) this.classList.remove("open"); };
 
   $("meChip").onclick=function(){
-    $("accName").value=me.name; $("accSub").textContent="ชื่อผู้ใช้: "+me.username;
-    $("accMsg").textContent=""; $("pwMsg").textContent=""; $("pwMsg").classList.remove("ok");
-    $("pwOld").value=""; $("pwNew").value=""; $("recNew").value="";
-    $("accBg").classList.add("open");
-  };
-  $("btnSavePw").onclick=function(){
-    var b=this, m=$("pwMsg");
-    var payload={oldPassword:$("pwOld").value,newPassword:$("pwNew").value.trim(),newRecovery:$("recNew").value.trim()};
-    m.classList.remove("ok");
-    if(!payload.oldPassword){ m.textContent="กรอกรหัสผ่านปัจจุบันก่อน"; return; }
-    if(!payload.newPassword && !payload.newRecovery){ m.textContent="ยังไม่ได้กรอกสิ่งที่จะเปลี่ยน"; return; }
-    b.disabled=true; b.innerHTML=spin("กำลังบันทึก…"); m.textContent="";
-    call("updateSecurity",token,payload).then(function(r){
-      $("pwOld").value=""; $("pwNew").value=""; $("recNew").value="";
-      m.classList.add("ok");
-      m.textContent=(r.changed.password?"เปลี่ยนรหัสผ่านแล้ว":"")+
-        (r.changed.password&&r.changed.recovery?" และ":"")+(r.changed.recovery?"เปลี่ยนคำลับแล้ว":"");
-      toast("บันทึกแล้ว");
-    }).catch(function(e){ m.textContent=e.message; })
-      .then(function(){ b.disabled=false; b.textContent="บันทึกรหัสผ่าน"; });
-  };
-  $("btnSaveName").onclick=function(){
-    var v=$("accName").value.trim();
-    if(!v){ $("accMsg").textContent="กรุณาใส่ชื่อ"; return; }
-    call("changeName",token,v).then(function(){
-      $("accBg").classList.remove("open"); toast("เปลี่ยนชื่อแล้ว"); return reload(true);
-    }).catch(function(e){ $("accMsg").textContent=e.message; });
+    $("accName").value=me.name; $("accSub").textContent="กำลังใช้งานในชื่อ "+me.name;
+    $("accMsg").textContent=""; $("accBg").classList.add("open");
   };
   $("btnCloseAcc").onclick=function(){ $("accBg").classList.remove("open"); };
   $("btnLogout").onclick=function(){
-    call("logout",token).catch(function(){});
-    store("tb_token",null); token=""; $("accBg").classList.remove("open"); showAuth();
+    if(!confirm("ออกจากชื่อนี้แล้วกลับไปหน้าใส่ชื่อเล่นใหม่?")) return;
+    store("tb_uid",null); uid=""; me=null;
+    $("accBg").classList.remove("open"); $("aName").value=""; showAuth();
   };
   $("accBg").onclick=function(e){ if(e.target===this) this.classList.remove("open"); };
 
   // ดึงข้อมูลใหม่เมื่อกลับมาที่หน้าจอ
   document.addEventListener("visibilitychange",function(){
-    if(!document.hidden && token && !document.querySelector(".sheet-bg.open")) reload(true);
+    if(!document.hidden && uid && !document.querySelector(".sheet-bg.open")) reload(true);
   });
 
   /* ---- เริ่มทำงาน ---- */
-  setAuthMode("login");
-  token=fetchStore("tb_token")||"";
-  if(!token){ showAuth(); }
+  uid=fetchStore("tb_uid")||"";
+  if(!uid){ showAuth(); }
   else{
-    call("bootstrap",token).then(function(d){
+    call("bootstrap",uid).then(function(d){
       me=d.me; plans=d.plans||[];
       members={}; (d.members||[]).forEach(function(m){ members[m.id]=m.name; });
       showApp(); renderAll();
-    }).catch(function(){ store("tb_token",null); showAuth(); });
+    }).catch(function(){ store("tb_uid",null); showAuth(); });
   }
 })();
 </script>
